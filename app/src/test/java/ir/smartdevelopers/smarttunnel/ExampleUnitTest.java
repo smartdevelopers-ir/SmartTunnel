@@ -15,9 +15,9 @@ import java.util.Arrays;
 import java.util.Random;
 
 
-import de.taimos.totp.TOTP;
 import ir.smartdevelopers.smarttunnel.packet.IPV4Header;
 import ir.smartdevelopers.smarttunnel.packet.TCPFlag;
+import ir.smartdevelopers.smarttunnel.packet.TCPOption;
 import ir.smartdevelopers.smarttunnel.utils.ByteUtil;
 
 /**
@@ -33,8 +33,6 @@ public class ExampleUnitTest {
         byte[] secBytes= base32.decode(sectet);
         String hexKey = Hex.encodeHexString(secBytes);
         System.out.println("hexKey = "+hexKey);
-        String totp=TOTP.getOTP(hexKey);
-        System.out.println("totp = "+totp);
         long step = System.currentTimeMillis() / 30000;
         String steps = Long.toHexString(17).toUpperCase();
         System.out.println("steps ="+steps);
@@ -55,7 +53,6 @@ public class ExampleUnitTest {
         buffer.put(Arrays.copyOfRange(a,3,5));
         System.out.println(Arrays.toString(buffer.array()));
 
-        MyVpnService.ArrayReplace(a,2,new byte[]{33,34});
 
         System.out.println(Arrays.toString(a));
 
@@ -123,6 +120,14 @@ public class ExampleUnitTest {
         assertEquals("4755bfab4052cc27342fd251db714407b842eef3",hash);
     }
     @Test
+    public void TCPOptionTest(){
+        String hexBytes="020405b40103030801010402";
+        byte[] data = getBytesFromHexString(hexBytes);
+        TCPOption option = TCPOption.fromByte(data);
+        assertEquals(option.getMaximumSegmentSize(),1460);
+        assertEquals(option.getWindowScale(),8);
+    }
+    @Test
     public void blockingQueueTest(){
 
     }
@@ -146,5 +151,14 @@ public class ExampleUnitTest {
             index++;
         }
         return result;
+    }
+    private byte[] getBytesFromHexString(String hexString){
+        byte[] bytes = new byte[hexString.length()/2];
+        int index=0;
+        for (int i =0; i< bytes.length;i++){
+            bytes[i] = (byte) Integer.parseInt(hexString.substring(index,index+2),16);
+            index+=2;
+        }
+        return bytes;
     }
 }

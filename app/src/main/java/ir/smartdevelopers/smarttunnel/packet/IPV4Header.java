@@ -306,7 +306,7 @@ public class IPV4Header extends IPHeader{
         return buffer.array();
 
     }
-    private String getIPAddress(byte[] address){
+    public static String getIPAddress(byte[] address){
         StringBuilder builder=new StringBuilder();
         for (int i=0;i<address.length;i++){
             builder.append(((int)address[i]) & 0xFF);

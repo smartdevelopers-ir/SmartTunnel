@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/txtServerPortLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:text="@string/udpgw_port"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/edtServerAddressLayout" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/edtUDPGWPortLayout"
+            android:layout_width="160dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="16dp"
+            app:boxBackgroundColor="@color/white"
+            app:boxBackgroundMode="outline"
+            app:hintEnabled="false"
+
+            >
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/edtUDPGWPort"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal"
+                android:paddingTop="12dp"
+                android:text="7300"
+                android:textSize="14sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+            <ir.smartdevelopers.smarttunnel.ui.customViews.RadioGridGroups
+                android:id="@+id/sshConnectionTypeGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="2"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginTop="16dp"
+                >
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/radDirect"
+                    android:layout_columnWeight="1"
+                    android:text="@string/direct"
+                    android:checked="true"
+                    android:layout_height="wrap_content"
+                     android:layout_width="0dp"/>
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/radWebsocket"
+                    android:layout_columnWeight="1"
+                    android:text="@string/websocket"
+                    android:layout_height="wrap_content"
+                    android:layout_width="0dp"
+                    />
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/radSslTls"
+                    android:layout_columnWeight="1"
+                    android:text="@string/ssl_tls"
+                    android:layout_height="wrap_content"
+                    android:layout_width="0dp"
+                    />
+                <com.google.android.material.radiobutton.MaterialRadioButton
+                    android:id="@+id/radSshProxy"
+                    android:layout_columnWeight="1"
+                    android:text="@string/ssh_proxy"
+                    android:layout_height="wrap_content"
+                    android:layout_width="0dp"
+                    />
+            </ir.smartdevelopers.smarttunnel.ui.customViews.RadioGridGroups>
+        <com.google.android.material.divider.MaterialDivider
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:dividerThickness="1dp" />
+
+        <FrameLayout
+            android:id="@+id/type_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            />
+    </LinearLayout>
+</ScrollView>

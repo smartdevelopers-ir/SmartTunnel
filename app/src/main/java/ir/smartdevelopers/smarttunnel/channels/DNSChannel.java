@@ -6,8 +6,6 @@ import com.jcraft.jsch.ChannelDirectTCPIP;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -19,7 +17,6 @@ import ir.smartdevelopers.smarttunnel.managers.ChannelManager;
 import ir.smartdevelopers.smarttunnel.packet.IPV4Header;
 import ir.smartdevelopers.smarttunnel.packet.Packet;
 import ir.smartdevelopers.smarttunnel.packet.PacketV4;
-import ir.smartdevelopers.smarttunnel.packet.TCP;
 import ir.smartdevelopers.smarttunnel.packet.UDP;
 import ir.smartdevelopers.smarttunnel.utils.ArrayUtil;
 import ir.smartdevelopers.smarttunnel.utils.ByteUtil;
@@ -45,8 +42,8 @@ public class DNSChannel extends Channel {
      * when done, set this to null
      */
 //    private PacketV4 mData;
-    public DNSChannel(PacketV4 packetV4, Session session, ChannelManager channelManager) {
-        super(packetV4.getTransmissionProtocol().getSourcePort()
+    public DNSChannel(String id,PacketV4 packetV4, Session session, ChannelManager channelManager) {
+        super(id, packetV4.getTransmissionProtocol().getSourcePort()
                 , packetV4.getTransmissionProtocol().getDestPort()
                 , packetV4.getIPHeader().getSourceAddress()
                 , packetV4.getIPHeader().getDestAddress());
@@ -58,7 +55,7 @@ public class DNSChannel extends Channel {
     }
 
     @Override
-    public synchronized void onNewPacket(Packet packet) {
+    public  void onNewPacket(Packet packet) {
 
         if (packet instanceof PacketV4) {
             PacketV4 pk = (PacketV4) packet;
@@ -68,7 +65,7 @@ public class DNSChannel extends Channel {
     }
 
 
-    private synchronized void sendDataToClient(byte[] data) {
+    private  void sendDataToClient(byte[] data) {
         Packet packet = makeUDPPacket(data, getRemoteAddress(), getLocalAddress(),
                 getRemotePort(), getLocalPort());
 
@@ -76,7 +73,7 @@ public class DNSChannel extends Channel {
 
     }
 
-    private synchronized Packet makeUDPPacket(byte[] data, byte[] sourceAddress, byte[] destAddress,
+    private  Packet makeUDPPacket(byte[] data, byte[] sourceAddress, byte[] destAddress,
                                               byte[] sourcePort, byte[] destPort) {
         int ipDataLength = 8 + (data == null ? 0 : data.length); // 8 is UDP header length
         IPV4Header header = generateHeader(sourceAddress, destAddress, ipDataLength);
@@ -103,12 +100,8 @@ public class DNSChannel extends Channel {
 
     @Override
     public void run() {
-        if (!mSession.isConnected()) {
-            try {
-                mSession.connect();
-            } catch (JSchException e) {
-                Log.e("TTT", "run: ", e);
-            }
+        if (mSession == null || !mSession.isConnected()){
+            return;
         }
         try {
             mChannel = (ChannelDirectTCPIP) mSession.openChannel("direct-tcpip");
@@ -166,13 +159,15 @@ public class DNSChannel extends Channel {
 
     @Override
     public void close() {
+        terminate();
+    }
+
+    @Override
+    public void terminate() {
         if (mChannel != null) {
             mChannel.disconnect();
         }
         mChannelManager.removeChannel(this);
-
-        Thread current = Thread.currentThread();
-        current.interrupt();
     }
 
 

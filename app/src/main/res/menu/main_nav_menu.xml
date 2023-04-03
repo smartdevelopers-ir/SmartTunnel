@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<item
+    android:id="@+id/action_home"
+    android:title="@string/home"
+    android:icon="@drawable/ic_home"
+    />
+    <item
+        android:id="@+id/action_config"
+        android:title="@string/configs"
+        android:icon="@drawable/ic_config"
+        />
+    <item
+        android:id="@+id/action_log"
+        android:title="@string/logs"
+        android:icon="@drawable/ic_log"
+        />
+    <item
+        android:id="@+id/action_apps"
+        android:title="@string/apps"
+        android:icon="@drawable/ic_apps"
+        />
+</menu>

@@ -1,16 +1,50 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.FakeSMS" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+    <style name="Theme.FakeSMS" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/purple_500</item>
-        <item name="colorPrimaryVariant">@color/purple_700</item>
-        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryVariant">@color/colorPrimaryVariant</item>
+        <item name="colorOnPrimary">@color/colorPrimaryText</item>
+        <item name="android:textColorPrimary">@color/colorPrimaryText</item>
         <!-- Secondary brand color. -->
-        <item name="colorSecondary">@color/teal_200</item>
-        <item name="colorSecondaryVariant">@color/teal_700</item>
-        <item name="colorOnSecondary">@color/black</item>
+        <item name="colorSecondary">@color/colorSecondary</item>
+        <item name="colorSecondaryVariant">@color/colorSecondaryVariant</item>
+        <item name="colorOnSecondary">@color/white</item>
         <!-- Status bar color. -->
         <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
         <!-- Customize your theme here. -->
+        <item name="textInputStyle">@style/Theme.FakeSMS.EditTextStyle</item>
+        <item name="appBarLayoutStyle">@style/AppBarLayoutStyle</item>
+        <item name="toolbarStyle">@style/ToolbarLayoutStyle</item>
+        <item name="materialButtonStyle">@style/ButtonsStyle</item>
+        <item name="android:windowBackground">@color/colorWindowBackground</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
+    <style name="AppBarLayoutStyle" parent="Widget.MaterialComponents.AppBarLayout.Surface">
+        <item name="background">@color/white</item>
+        <item name="colorPrimary">@color/white</item>
+    </style>
+    <style name="ToolbarLayoutStyle" parent="Widget.MaterialComponents.Toolbar.Surface">
+        <item name="background">@color/white</item>
+        <item name="colorPrimary">@color/white</item>
+        <item name="titleTextColor">@color/colorPrimaryText</item>
+    </style>
+    <style name="ButtonsStyle" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/color_buttons</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerRadius">20dp</item>
+    </style>
+    <style name="Theme.FakeSMS.EditTextStyle" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item name="colorPrimary">@color/colorSecondary</item>
+        <item name="boxBackgroundColor">@color/white</item>
+        <item name="hintEnabled">false</item>
+    </style>
+    <style name="BottomNavTextAppearanceActive" >
+        <item name="android:textColor">@color/colorActiveText</item>
+        <item name="colorOnSecondary">@color/colorActiveText</item>
+        <item name="colorPrimary">@color/colorActiveText</item>
+
+    </style>
+
 </resources>

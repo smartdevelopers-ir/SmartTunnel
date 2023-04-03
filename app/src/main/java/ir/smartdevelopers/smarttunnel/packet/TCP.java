@@ -235,6 +235,10 @@ public class TCP extends TransmissionProtocol {
         return mFlag;
     }
 
+    public TCPOption getTCPOption() {
+        return mTCPOption;
+    }
+
     public byte[] getChecksum() {
         return mChecksum;
     }

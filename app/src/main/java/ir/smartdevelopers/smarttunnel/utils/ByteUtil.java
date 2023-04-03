@@ -55,4 +55,8 @@ public class ByteUtil {
     public static String hash(byte[] value){
         return DigestUtils.sha1Hex(value);
     }
+
+    public static void clear(byte[] data){
+        Arrays.fill(data, (byte) 0);
+    }
 }

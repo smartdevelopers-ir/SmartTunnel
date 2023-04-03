@@ -1,17 +1,18 @@
 package ir.smartdevelopers.smarttunnel.channels;
 
-import java.io.Closeable;
 import java.util.Arrays;
 
 import ir.smartdevelopers.smarttunnel.packet.Packet;
 
 public abstract class Channel  implements Runnable{
+    private final String _id;
     private final byte[] mLocalPort;
     private final byte[] mRemotePort;
     private final byte[] mLocalAddress;
     private final byte[] mRemoteAddress;
 
-    public Channel(byte[] localPort, byte[] remotePort, byte[] localAddress, byte[] remoteAddress) {
+    public Channel(String id, byte[] localPort, byte[] remotePort, byte[] localAddress, byte[] remoteAddress) {
+        _id = id;
         mLocalPort = localPort;
         mRemotePort = remotePort;
         mLocalAddress = localAddress;
@@ -36,6 +37,7 @@ public abstract class Channel  implements Runnable{
 
 
     public abstract void close();
+    public abstract void terminate();
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -49,5 +51,9 @@ public abstract class Channel  implements Runnable{
         int result = Arrays.hashCode(mLocalPort);
         result = 31 * result + Arrays.hashCode(mLocalAddress);
         return result;
+    }
+
+    public String getId() {
+        return _id;
     }
 }

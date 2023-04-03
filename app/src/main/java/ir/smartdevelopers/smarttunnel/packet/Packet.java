@@ -1,7 +1,7 @@
 package ir.smartdevelopers.smarttunnel.packet;
 
 public abstract class Packet {
-    public static int MAX_SIZE = 65535;
+    public static int MAX_SIZE = 32*1024;
     public abstract byte[] getPacketBytes();
     public abstract byte[] getSourceAddress();
     public abstract byte[] getDestAddress();

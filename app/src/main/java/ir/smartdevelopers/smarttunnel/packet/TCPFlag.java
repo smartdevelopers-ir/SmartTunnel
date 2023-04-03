@@ -32,6 +32,7 @@ public class TCPFlag {
         flag.ACK=1;
         return flag;
     }
+
     public static TCPFlag SYN_ACK(){
         TCPFlag flag = new TCPFlag();
         flag.SYN=1;
@@ -47,6 +48,12 @@ public class TCPFlag {
     public static TCPFlag RST_ACK(){
         TCPFlag flag = new TCPFlag();
         flag.RST=1;
+        flag.ACK=1;
+        return flag;
+    }
+    public static TCPFlag FIN_ACK(){
+        TCPFlag flag = new TCPFlag();
+        flag.FIN=1;
         flag.ACK=1;
         return flag;
     }
