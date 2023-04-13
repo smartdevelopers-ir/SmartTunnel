@@ -2,7 +2,6 @@ package ir.smartdevelopers.smarttunnel.managers;
 
 import com.jcraft.jsch.Session;
 
-import java.nio.ByteBuffer;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,8 +31,10 @@ public class ChannelManager {
 
     public  void sendToRemoteServer(Packet packet) {
 
-        String channelId = String.format(Locale.US,"%s_%d_%d",IPV4Header.getIPAddress(packet.getSourceAddress()),
-                ByteUtil.getIntValue(packet.getSourcePort()),packet.getProtocolNumber());
+        String channelId = String.format(Locale.US,"%s_%d_to_%s_%d_%d",
+                IPV4Header.getIPAddress(packet.getSourceAddress()),ByteUtil.getIntValue(packet.getSourcePort()),
+                IPV4Header.getIPAddress(packet.getDestAddress()),ByteUtil.getIntValue(packet.getDestPort())
+                ,packet.getProtocolNumber());
         if (mChannels.get(channelId) != null){
             Objects.requireNonNull(mChannels.get(channelId)).onNewPacket(packet);
         }else {
@@ -41,6 +42,10 @@ public class ChannelManager {
                 PacketV4 pk = (PacketV4) packet;
                 Channel channel = null;
                 if (pk.getTransmissionProtocol() instanceof TCP){
+                    // do not create new channel if incoming packet is not TCP initial packet
+                    if (((TCP) pk.getTransmissionProtocol()).getFlag().SYN == 0 ){
+                        return;
+                    }
                     channel = new ChannelV4TCP(channelId, pk,mSession,this);
                 }else if (pk.getTransmissionProtocol() instanceof UDP && ByteUtil.getIntValue(pk.getDestPort()) == 53){
                     channel = new DNSChannel(channelId,pk,mSession,this);
@@ -78,7 +83,7 @@ public class ChannelManager {
     public void destroy() {
         if (mChannels.size() > 0) {
             for (Channel ch : mChannels.values()){
-                ch.terminate();
+                ch.close();
             }
         }
     }

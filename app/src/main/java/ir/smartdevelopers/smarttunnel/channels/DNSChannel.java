@@ -1,9 +1,6 @@
 package ir.smartdevelopers.smarttunnel.channels;
 
-import android.util.Log;
-
 import com.jcraft.jsch.ChannelDirectTCPIP;
-import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 
 import java.io.IOException;
@@ -153,22 +150,18 @@ public class DNSChannel extends Channel {
         }
 
 
-        close();
+        this.close();
     }
 
 
     @Override
     public void close() {
-        terminate();
-    }
-
-    @Override
-    public void terminate() {
         if (mChannel != null) {
             mChannel.disconnect();
         }
         mChannelManager.removeChannel(this);
     }
+
 
 
 }

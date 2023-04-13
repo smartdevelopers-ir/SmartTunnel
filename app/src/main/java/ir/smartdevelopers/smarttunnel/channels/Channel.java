@@ -37,7 +37,6 @@ public abstract class Channel  implements Runnable{
 
 
     public abstract void close();
-    public abstract void terminate();
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -18,7 +18,6 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.os.ParcelFileDescriptor;
-import android.os.SystemClock;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
@@ -29,18 +28,19 @@ import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.Session;
+
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Set;
+import java.util.Arrays;
 
 import ir.smartdevelopers.smarttunnel.packet.Packet;
 import ir.smartdevelopers.smarttunnel.ui.activities.MainActivity;
 import ir.smartdevelopers.smarttunnel.ui.exceptions.ConfigException;
 import ir.smartdevelopers.smarttunnel.ui.models.Config;
-import ir.smartdevelopers.smarttunnel.ui.models.ConfigListModel;
+import ir.smartdevelopers.smarttunnel.ui.models.SSHConfig;
 import ir.smartdevelopers.smarttunnel.ui.utils.ConfigsUtil;
 import ir.smartdevelopers.smarttunnel.ui.utils.PrefsUtil;
 import ir.smartdevelopers.smarttunnel.utils.ByteUtil;
@@ -73,7 +73,6 @@ public class MyVpnService extends VpnService {
     private Handler mUiThreadHandler;
     private ServiceHandler mServiceHandler;
     private LocalReader mLocalReaderThread;
-    private LocalWriter mLocalWriterThread;
     private Config mCurrentConfig;
     private String mConfigId;
     private String mConfigType ;
@@ -163,10 +162,7 @@ public class MyVpnService extends VpnService {
             mLocalReaderThread.interrupt();
             mLocalReaderThread = null;
         }
-        if (mLocalWriterThread != null) {
-            mLocalWriterThread.interrupt();
-            mLocalWriterThread = null;
-        }
+
         if (mCurrentConfig != null){
             mCurrentConfig.cancel();
         }
@@ -225,6 +221,12 @@ public class MyVpnService extends VpnService {
         }
         protect(mCurrentConfig.getMainSocket());
         try {
+//            JSch jSch = new JSch();
+//            jSch.setHostKeyRepository(new HostKeyRepo(getApplicationContext()));
+//            Session session = jSch.getSession(((SSHConfig)mCurrentConfig).getUsername()
+//                    ,((SSHConfig)mCurrentConfig).getServerAddress(),((SSHConfig)mCurrentConfig).getServerPort());
+//            session.setPassword(((SSHConfig)mCurrentConfig).getPassword());
+//            session.connect(15000);
             VpnService.Builder builder=new VpnService.Builder();
             builder.setSession("SmartTunnel").setMtu(PRIVATE_MTU);
             builder.addAddress(PRIVATE_VLAN4_CLIENT, 24);
@@ -251,7 +253,7 @@ public class MyVpnService extends VpnService {
 //                }
 //            }
             builder.addAllowedApplication("ir.smartdevelopers.tcptest");
-            builder.addAllowedApplication("com.google.chrome");
+            builder.addAllowedApplication("com.android.chrome");
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 Network activeNetwork = connectivityManager.getActiveNetwork();
                 if (activeNetwork != null) {
@@ -272,13 +274,14 @@ public class MyVpnService extends VpnService {
             builder.setConfigureIntent(getMainIntent());
             vpnInterface = builder.establish();
 
+
             FileInputStream in = new FileInputStream(vpnInterface.getFileDescriptor());
             FileOutputStream out = new FileOutputStream(vpnInterface.getFileDescriptor());
-
+            OnPacketFromServerListener packetListener = new OnPacketFromServerListener(out);
+            mCurrentConfig.setOnPacketFromServerListener(packetListener);
             mLocalReaderThread = new LocalReader(in,mCurrentConfig,this);
             mLocalReaderThread.start();
-            mLocalWriterThread = new LocalWriter(out,mCurrentConfig,this);
-            mLocalWriterThread.start();
+
             mStatus = Status.CONNECTED;
             sendStatusChangedSignal();
 
@@ -333,6 +336,23 @@ public class MyVpnService extends VpnService {
         return pi;
     }
 
+    private static class OnPacketFromServerListener implements Config.OnPacketFromServerListener{
+
+        private FileOutputStream localOut;
+
+        private OnPacketFromServerListener(FileOutputStream localOut) {
+            this.localOut = localOut;
+        }
+
+        @Override
+        public void onPacketFromServer(byte[] packet) {
+            try {
+                localOut.write(packet);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
     private static class LocalReader extends Thread{
         private final FileInputStream mLocalInput;
         private final Config mConfig;
@@ -350,7 +370,6 @@ public class MyVpnService extends VpnService {
             int len=0;
             try{
 
-                OutputStream outputStream = mConfig.getOutputStream();
                 while (true){
                     if (mConfig.isCanceled()){
                         return;
@@ -359,8 +378,7 @@ public class MyVpnService extends VpnService {
                     ByteUtil.clear(packet);
                     len=mLocalInput.read(packet);
                     if (len >0){
-                        outputStream.write(packet,0,len);
-                        outputStream.flush();
+                        mConfig.sendPacketToRemoteServer(Arrays.copyOfRange(packet,0,len));
                         idle=false;
                     }
 
@@ -375,45 +393,6 @@ public class MyVpnService extends VpnService {
 
 
     }
-    private static class LocalWriter extends Thread{
-        private final FileOutputStream mLocalOut;
-        private final Config mConfig;
-        private final MyVpnService mMyVpnService;
-        final byte[] packet = new byte[Packet.MAX_SIZE];
-        private LocalWriter(FileOutputStream localOut, Config config,MyVpnService service) {
-            mLocalOut = localOut;
-            mConfig = config;
-            mMyVpnService = service;
-        }
-
-        @Override
-        public void run() {
-            int len=0;
-            try{
-
-                InputStream inputStream = mConfig.getInputStream();
-                while (true){
-                    if (mConfig.isCanceled()){
-                        return;
-                    }
-                    ByteUtil.clear(packet);
-                    len=inputStream.read(packet);
-                    if (len >0){
-                        mLocalOut.write(packet,0,len);
-                        mLocalOut.flush();
-
-                    }
-
-                }
-            } catch (IOException e) {
-                mMyVpnService.retry();
-            }
-        }
-
-
-    }
-
-
 
 
 

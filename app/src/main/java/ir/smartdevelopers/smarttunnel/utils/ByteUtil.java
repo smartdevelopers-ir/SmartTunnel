@@ -17,6 +17,18 @@ public class ByteUtil {
         }
         return r;
     }
+    public static byte[] getByteFromLong(long value,int minByteArraySize){
+        int leadingZero = Long.numberOfLeadingZeros(value);
+        int byteCount = 8 - leadingZero/8;
+        byteCount = Integer.max(byteCount,minByteArraySize);
+        byte[] r = new byte[byteCount];
+        for (int i = byteCount-1 ; i >= 0 ; i--){
+            byte a = (byte) (value & 0xFF);
+            r[i] = a;
+            value >>>= 8;
+        }
+        return r;
+    }
     public static int getIntValue(byte[] value){
         if (value.length >4){
             throw new NumberFormatException("Integer is 4 byte, can not convert more than 4 byte to int");

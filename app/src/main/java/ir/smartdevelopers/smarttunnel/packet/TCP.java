@@ -1,5 +1,7 @@
 package ir.smartdevelopers.smarttunnel.packet;
 
+import androidx.annotation.NonNull;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -106,6 +108,60 @@ public class TCP extends TransmissionProtocol {
     /**This is TCP header holder*/
     private byte[] mHeader;
 
+    public enum State {
+        /**
+         * Waiting for a connection request from any remote TCP end-point.
+         */
+        LISTEN,
+        /**
+         * Waiting for a confirming connection request acknowledgment after having
+         * both received and sent a connection request.
+         */
+        SYN_RECEIVED,
+        /**
+         * An open connection, data received can be delivered to the user.
+         * The normal state for the data transfer phase of the connection.
+         */
+        ESTABLISHED,
+        /**
+         * Waiting for a connection termination request from the remote TCP,
+         * or an acknowledgment of the connection termination request previously sent.
+         */
+        FIN_WAIT_1,
+        /**
+         * Waiting for a connection termination request from the remote TCP.
+         */
+        FIN_WAIT_2,
+        /**
+         * Waiting for a connection termination request from the local user.
+         */
+        CLOSE_WAIT,
+        /**
+         * Waiting for a connection termination request acknowledgment from the remote TCP.
+         */
+        CLOSING,
+        /**
+         * Waiting for an acknowledgment of the connection termination request previously s
+         * ent to the remote TCP (which includes an acknowledgment of
+         * its connection termination request).
+         */
+        LAST_ACK,
+        /**
+         * Waiting for enough time to pass to be sure that all remaining packets on
+         * the connection have expired.
+         */
+        TIME_WAIT,
+        /**
+         * No connection state at all.
+         */
+        CLOSED;
+
+        @NonNull
+        @Override
+        public String toString() {
+            return name();
+        }
+    }
     public TCP(byte[] sourcePort, byte[] destPort) {
         super(sourcePort, destPort);
     }
@@ -201,6 +257,11 @@ public class TCP extends TransmissionProtocol {
     public void setWindowSize(byte[] windowSize) {
         mWindowSize = windowSize;
     }
+
+    public int getWindowSize() {
+        return ByteUtil.getIntValue(mWindowSize);
+    }
+
     public void setUrgentPointer(int urgentPointer) {
         mUrgentPointer = ByteUtil.getByteFromInt(urgentPointer,2);
     }

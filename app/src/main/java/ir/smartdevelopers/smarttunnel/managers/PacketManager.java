@@ -40,7 +40,7 @@ public class PacketManager {
         mChannelManager = new ChannelManager(session, this);
         mServerPacketListener = serverPacketListener;
         mLocalPacketWriter = new LocalPacketWriter(mPacketsQueue,mServerPacketListener, this);
-        mWriterThread = new Thread(mLocalPacketWriter);
+        mWriterThread = new Thread(mLocalPacketWriter,"packetManagerLocalWriter");
         mWriterThread.start();
     }
 
@@ -70,6 +70,9 @@ public class PacketManager {
         public void run() {
             try {
                 while (true){
+                    if (mPacketManager.mDestroyed){
+                        break;
+                    }
                     Packet packet =mPacketsQueue.poll();
                     if (packet != null){
                         mServerPacketListener.onPacketFromServer(packet);
@@ -96,11 +99,11 @@ public class PacketManager {
         if (packet ==null ){
             return;
         }
-//        if (packet instanceof PacketV4){
-//            if (!((PacketV4) packet).getIPHeader().getDestAddressName().equals("142.250.179.174")){
-//                return;
-//            }
-//        }
+        if (packet instanceof PacketV4){
+            if (!((PacketV4) packet).getIPHeader().getDestAddressName().equals("151.245.0.212")){
+                return;
+            }
+        }
 //       if (packet.getProtocolNumber() != UDP.PROTOCOL_NUMBER){
 //           continue;
 //       }

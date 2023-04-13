@@ -18,14 +18,7 @@ public abstract class Config {
     private final String type;
     private String mNote;
     private Proxy mProxy;
-    /** For sending data to others that reads from our inputStream, We must write data
-     * to this output*/
-    protected transient PipedOutputStream mSelfOutputStream;
-    private  transient PipedOutputStream mOut;
-    /** For reading data from others that write to our outputStream, We must read data
-     * from this input*/
-    protected transient PipedInputStream mSelfInputStream;
-    private  transient PipedInputStream mIn;
+   protected OnPacketFromServerListener mOnPacketFromServerListener;
 
 
     public Config(String name, String id, String type)  {
@@ -35,30 +28,8 @@ public abstract class Config {
 
     }
 
-    @CallSuper
-    public  void connect() throws ConfigException{
-        try {
-            if (mIn == null ){
-                mSelfOutputStream = new PipedOutputStream();
-                mIn = new PipedInputStream(mSelfOutputStream, Packet.MAX_SIZE);
-            }
-            if (mOut == null){
-                mOut = new PipedOutputStream();
-                mSelfInputStream = new PipedInputStream(mOut,Packet.MAX_SIZE);
-            }
-        } catch (IOException e) {
-            throw new ConfigException(e);
-        }
-    };
+    public abstract void connect() throws ConfigException;
     public abstract Socket getMainSocket();
-    /** Must be called after {@link #connect()}*/
-    public  InputStream getInputStream(){
-        return mIn;
-    }
-    /** Must be called after {@link #connect()}*/
-    public OutputStream getOutputStream(){
-        return mOut;
-    }
 
     public String getName() {
         return mName;
@@ -91,5 +62,14 @@ public abstract class Config {
     public Config setNote(String note) {
         mNote = note;
         return this;
+    }
+    public abstract void sendPacketToRemoteServer(byte[] packet);
+
+    public void setOnPacketFromServerListener(OnPacketFromServerListener onPacketFromServerListener) {
+        mOnPacketFromServerListener = onPacketFromServerListener;
+    }
+
+    public interface OnPacketFromServerListener{
+        void onPacketFromServer(byte[] packet);
     }
 }

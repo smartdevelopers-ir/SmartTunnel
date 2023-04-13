@@ -1,15 +1,18 @@
 package ir.smartdevelopers.smarttunnel.packet;
 
+import androidx.annotation.NonNull;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Locale;
 
 import ir.smartdevelopers.smarttunnel.utils.ByteUtil;
 
 public class PacketV4 extends Packet{
 
     private final IPV4Header mIPV4Header;
-    private final TransmissionProtocol mTransmissionProtocol;
-    private byte[] data;
+    protected TransmissionProtocol mTransmissionProtocol;
+    protected byte[] data;
     public PacketV4(byte[] packet, IPV4Header ipv4Header, TransmissionProtocolFactory protocolFactory){
         if (packet.length > MAX_SIZE){
             throw new IllegalArgumentException("packet size can not bet mor than "+MAX_SIZE+" bytes");
@@ -85,5 +88,21 @@ public class PacketV4 extends Packet{
 
     public byte[] getData() {
         return data;
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+       if (mTransmissionProtocol instanceof TCP){
+           TCP tcp = (TCP) mTransmissionProtocol;
+           return String.format(Locale.ENGLISH,
+                   "%s:%d to %s:%d flag :%s - seq = %d - ack = %d - dataLength = %d",
+                   getIPHeader().getSourceAddressName(),tcp.getSourcePortIntValue(),
+                   getIPHeader().getDestAddressName(),tcp.getDestPortIntValue(),
+                   Integer.toBinaryString(tcp.getFlag().getByte()),
+                   tcp.getSequenceNumberIntValue(),tcp.getAcknowledgmentNumberIntValue(),
+                   getData() == null ? 0 : getData().length);
+       }
+       return super.toString();
     }
 }

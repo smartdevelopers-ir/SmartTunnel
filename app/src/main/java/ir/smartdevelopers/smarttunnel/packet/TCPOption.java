@@ -1,7 +1,11 @@
 package ir.smartdevelopers.smarttunnel.packet;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import ir.smartdevelopers.smarttunnel.utils.ArrayUtil;
 import ir.smartdevelopers.smarttunnel.utils.ByteUtil;
 
 public class TCPOption {
@@ -38,7 +42,6 @@ public class TCPOption {
      * */
     private static final byte KIND_TS = 8;
 
-    private int maximumSegmentSize;
     private byte[] maximumSegmentSizeByte;
     private byte windowScale;
     private boolean selectiveAcknowledgmentPermitted;
@@ -60,8 +63,55 @@ public class TCPOption {
 //    }
 
     public byte[] getBytes(){
-        return options;
+        if (options != null ){
+            return options;
+        }
+        return generateOptions();
     }
+
+    private byte[] generateOptions() {
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        try {
+        if (maximumSegmentSizeByte != null){
+            stream.write(KIND_MSS);
+            stream.write(4);
+            stream.write(maximumSegmentSizeByte);
+        }
+        if (windowScale != 0){
+            stream.write(KIND_NO);
+            stream.write(KIND_WS);
+            stream.write(3);
+            stream.write(windowScale);
+        }
+        if (selectiveAcknowledgmentPermitted){
+            stream.write(KIND_NO);
+            stream.write(KIND_NO);
+            stream.write(KIND_SAP);
+            stream.write(2);
+        }
+        if (selectiveAcknowledgment != null){
+            stream.write(KIND_NO);
+            stream.write(KIND_NO);
+            stream.write(KIND_SA);
+            stream.write(selectiveAcknowledgment.length + 2);
+            stream.write(selectiveAcknowledgment);
+        }
+        if (timeStamp != null){
+            stream.write(KIND_NO);
+            stream.write(KIND_NO);
+            stream.write(KIND_TS);
+            stream.write(timeStamp);
+        }
+
+        } catch (IOException ignore) {
+
+        }
+        if (stream.toByteArray().length == 0){
+            return null;
+        }
+        return stream.toByteArray();
+    }
+
     public static TCPOption fromByte(byte[] option){
         TCPOption op = new TCPOption(option);
         int i=0;
@@ -112,8 +162,26 @@ public class TCPOption {
         return ByteUtil.getIntValue(maximumSegmentSizeByte);
     }
 
+    public void setMaximumSegmentSizeByte(byte[] maximumSegmentSizeByte) {
+        this.maximumSegmentSizeByte = maximumSegmentSizeByte;
+    }
+    public void setMaximumSegmentSize(int maximumSegmentSize) {
+        this.maximumSegmentSizeByte = ByteUtil.getByteFromInt(maximumSegmentSize,2);
+    }
     public byte getWindowScale() {
         return windowScale;
+    }
+
+    public void setWindowScale(byte windowScale) {
+        this.windowScale = windowScale;
+    }
+
+    public void setSelectiveAcknowledgmentPermitted(boolean selectiveAcknowledgmentPermitted) {
+        this.selectiveAcknowledgmentPermitted = selectiveAcknowledgmentPermitted;
+    }
+
+    public void setTimeStamp(long timeStamp) {
+        this.timeStamp = ByteUtil.getByteFromLong(timeStamp,8);
     }
 
     public byte[] getTimeStamp() {
@@ -123,8 +191,39 @@ public class TCPOption {
     public byte[] getSelectiveAcknowledgment() {
         return selectiveAcknowledgment;
     }
+    public SACK[] getSelectiveAcknowledgmentIntValues(){
+        if (selectiveAcknowledgment == null ){
+            return null;
+        }
+        SACK[] values = new SACK[selectiveAcknowledgment.length/4];
+        int index=0;
+        for (int i = 0; i< selectiveAcknowledgment.length ; i+=8){
+            SACK sack = new SACK();
+            sack.leftEdge = ByteUtil.getIntValue(Arrays.copyOfRange(selectiveAcknowledgment,i,i+4));
+            sack.rightEdge= ByteUtil.getIntValue(Arrays.copyOfRange(selectiveAcknowledgment,i+4,i+8));
+            values[index] = sack;
+            index++;
+        }
+        return values;
+    }
 
+    public void setSelectiveAcknowledgment(byte[] selectiveAcknowledgment) {
+        this.selectiveAcknowledgment = selectiveAcknowledgment;
+    }
+    public void setSelectiveAcknowledgment(SACK[] sacks) {
+        byte[] selectiveACK = new byte[sacks.length * 2 * 4];
+        int index = 0;
+        for (SACK sack : sacks){
+            ArrayUtil.replace(selectiveACK,index,ByteUtil.getByteFromInt(sack.leftEdge,4));
+            ArrayUtil.replace(selectiveACK,index+=4,ByteUtil.getByteFromInt(sack.rightEdge,4));
+        }
+        selectiveAcknowledgment = selectiveACK;
+    }
     public boolean isSelectiveAcknowledgmentPermitted() {
         return selectiveAcknowledgmentPermitted;
+    }
+    public static class SACK {
+        public int leftEdge;
+        public int rightEdge;
     }
 }

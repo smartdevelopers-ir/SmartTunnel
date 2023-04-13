@@ -37,7 +37,7 @@ public class SSHConfig extends Config {
     public static int MODE_PROXY = 301;
     /**
      * determine this config is proxy or main connection
-     * */
+     */
     private int mConfigMode;
     private String mServerAddress;
     private int mServerPort;
@@ -54,7 +54,6 @@ public class SSHConfig extends Config {
     private transient JSch mJSch;
     private transient Session mSession;
     private transient PacketManager mPacketManager;
-    private transient ReaderThread mReaderThread;
     private transient boolean mCanceled;
 
     private SSHConfig(String name, String id, String type) {
@@ -65,7 +64,7 @@ public class SSHConfig extends Config {
                      int serverPort, String username, String password,
                      boolean usePrivateKey, PrivateKey privateKey, int UDPGWPort,
                      SSHProxy jumper, int connectionType, String payload,
-                     String serverNameIndicator, HostKeyRepo hostKeyRepo)  {
+                     String serverNameIndicator, HostKeyRepo hostKeyRepo) {
         super(name, id, type);
         mConfigMode = configMode;
         mServerAddress = serverAddress;
@@ -85,7 +84,6 @@ public class SSHConfig extends Config {
     @Override
     public void connect() throws ConfigException {
 
-        super.connect();
         try {
             mJSch = new JSch();
             mJSch.setHostKeyRepository(mHostKeyRepo);
@@ -134,10 +132,8 @@ public class SSHConfig extends Config {
             if (mConfigMode == MODE_PROXY) {
                 return;
             }
-            ServerPacketListener serverPacketListener = new ServerPacketListener(mSelfOutputStream);
+            ServerPacketListener serverPacketListener = new ServerPacketListener(this);
             mPacketManager = new PacketManager(mSession, serverPacketListener);
-            mReaderThread = new ReaderThread(mSelfInputStream, mPacketManager, this);
-            mReaderThread.start();
 
 
         } catch (JSchException jSchException) {
@@ -145,22 +141,23 @@ public class SSHConfig extends Config {
         }
     }
 
-    /** we connect to proxy ssh server first, then we set local port forwarding
+    /**
+     * we connect to proxy ssh server first, then we set local port forwarding
      * to destAddress and destPort
-     * */
-    private void connectSSHProxy(SSHProxy proxy,String destAddress,int destPort) throws ConfigException, JSchException {
+     */
+    private void connectSSHProxy(SSHProxy proxy, String destAddress, int destPort) throws ConfigException, JSchException {
         proxy.getSSHConfig().connect();
         Session session = proxy.getSSHConfig().getSession();
-        int localPort = session.setPortForwardingL(proxy.getAddress(),proxy.getPort(),destAddress,destPort);
+        int localPort = session.setPortForwardingL(proxy.getAddress(), proxy.getPort(), destAddress, destPort);
         proxy.setPort(localPort);
     }
 
     @Override
     public Socket getMainSocket() {
-        if (mSession==null){
+        if (mSession == null) {
             return null;
         }
-        if (!mSession.isConnected()){
+        if (!mSession.isConnected()) {
             return null;
         }
         return mSession.getSocket();
@@ -274,17 +271,13 @@ public class SSHConfig extends Config {
     @Override
     public void cancel() {
         mCanceled = true;
-        if (mReaderThread != null){
-            mReaderThread.interrupt();
-            mReaderThread = null;
-        }
         if (mPacketManager != null) {
             mPacketManager.destroy();
         }
         if (mSession != null) {
             mSession.disconnect();
         }
-        if (mJumper != null){
+        if (mJumper != null) {
             mJumper.getSSHConfig().cancel();
         }
     }
@@ -292,68 +285,26 @@ public class SSHConfig extends Config {
     public boolean isCanceled() {
         return mCanceled;
     }
-    /** We reade data from {@link #getOutputStream()} that others writes
-     * And send packet to packetManager*/
-    private static class ReaderThread extends Thread {
-        private final InputStream mInputStream;
-        private final PacketManager mPacketManager;
-        private final SSHConfig mSSHConfig;
-        final long IDLE_TIME = 100;
-        final byte[] packet = new byte[1024*4];
-        private ReaderThread(InputStream inputStream, PacketManager packetManager, SSHConfig sshConfig) {
-            mInputStream = inputStream;
-            mPacketManager = packetManager;
-            mSSHConfig = sshConfig;
-        }
 
-        @Override
-        public void run() {
-            int len=0;
-            try{
-
-                while (true){
-                    if (mSSHConfig.isCanceled()){
-                        return;
-                    }
-                    boolean idle = true;
-                    ByteUtil.clear(packet);
-                    len=mInputStream.read(packet);
-                    if (len >0){
-                        mPacketManager.sendToRemoteServer(Arrays.copyOfRange(packet,0,len));
-                        idle=false;
-                    }
-
-                    if (idle){
-                        Thread.sleep(IDLE_TIME);
-                    }
-                }
-            } catch (IOException | InterruptedException e) {
-                if (!mSSHConfig.isCanceled()){
-                    mSSHConfig.retry();
-                }
-            }
-        }
-
-
+    @Override
+    public void sendPacketToRemoteServer(byte[] packet) {
+        mPacketManager.sendToRemoteServer(packet);
     }
 
 
+    private static class ServerPacketListener implements PacketManager.ServerPacketListener {
 
-    private static class ServerPacketListener implements PacketManager.ServerPacketListener{
+        private final SSHConfig mConfig;
 
-        private final OutputStream mOutputStream;
-
-        public ServerPacketListener(OutputStream outputStream) {
-            mOutputStream = outputStream;
+        public ServerPacketListener(SSHConfig config) {
+            mConfig = config;
         }
 
         @Override
         public synchronized void onPacketFromServer(Packet packet) {
-            try {
-                mOutputStream.write(packet.getPacketBytes());
-                mOutputStream.flush();
-            } catch (IOException e) {
-                Logger.logError(e.getMessage());
+
+            if (mConfig.mOnPacketFromServerListener != null) {
+                mConfig.mOnPacketFromServerListener.onPacketFromServer(packet.getPacketBytes());
             }
 
         }
@@ -376,9 +327,10 @@ public class SSHConfig extends Config {
         private String mPayload;
         private String mServerNameIndicator;
 
-        public Builder(int configMode){
+        public Builder(int configMode) {
             mConfigMode = configMode;
         }
+
         public Builder(String name, int configMode, String serverAddress, int serverPort, String username,
                        String password, HostKeyRepo hostKeyRepo) {
             this.name = name;
@@ -525,7 +477,7 @@ public class SSHConfig extends Config {
             return mServerNameIndicator;
         }
 
-        public SSHConfig build()  {
+        public SSHConfig build() {
             if (TextUtils.isEmpty(id)) {
                 id = UUID.randomUUID().toString();
             }
@@ -537,9 +489,9 @@ public class SSHConfig extends Config {
             }
 
             return new SSHConfig(name, id, CONFIG_TYPE,
-                    mConfigMode, mServerAddress,mServerPort,mUsername,
-                    mPassword,mUsePrivateKey,mPrivateKey,mUDPGWPort,
-                    mJumper,mConnectionType,mPayload,mServerNameIndicator,
+                    mConfigMode, mServerAddress, mServerPort, mUsername,
+                    mPassword, mUsePrivateKey, mPrivateKey, mUDPGWPort,
+                    mJumper, mConnectionType, mPayload, mServerNameIndicator,
                     mHostKeyRepo);
 
         }

@@ -13,11 +13,17 @@ import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 
 
+import ir.smartdevelopers.smarttunnel.packet.TCPPacketQueue;
 import ir.smartdevelopers.smarttunnel.packet.IPV4Header;
+import ir.smartdevelopers.smarttunnel.packet.Packet;
+import ir.smartdevelopers.smarttunnel.packet.PacketV4;
+import ir.smartdevelopers.smarttunnel.packet.TCP;
 import ir.smartdevelopers.smarttunnel.packet.TCPFlag;
 import ir.smartdevelopers.smarttunnel.packet.TCPOption;
+import ir.smartdevelopers.smarttunnel.packet.TCPPacketWrapper;
 import ir.smartdevelopers.smarttunnel.utils.ByteUtil;
 
 /**
@@ -126,10 +132,109 @@ public class ExampleUnitTest {
         TCPOption option = TCPOption.fromByte(data);
         assertEquals(option.getMaximumSegmentSize(),1460);
         assertEquals(option.getWindowScale(),8);
+        TCPOption newOption1 = new TCPOption();
+        assertNull(newOption1.getBytes());
+        newOption1.setMaximumSegmentSize(1024);
+        assertArrayEquals(newOption1.getBytes(),new byte[]{2,4,4,0});
+        newOption1.setWindowScale((byte) 2);
+        assertArrayEquals(newOption1.getBytes(),new byte[]{2,4,4,0,1,3,3,2});
+        TCPOption.SACK sack = new TCPOption.SACK();
+        sack.leftEdge = 200;
+        sack.rightEdge = 300;
+        newOption1.setSelectiveAcknowledgment(new TCPOption.SACK[]{sack});
+        assertArrayEquals(newOption1.getBytes(),new byte[]{2,4,4,0,1,3,3,2,1,1,5,10,0,0,0,-56,0,0,1,44});
+
+
+
+    }
+    @Test
+    public void tcpPacketQueueTest() throws InterruptedException {
+        TCPPacketQueue queue = new TCPPacketQueue();
+        Packet pk1 = new PacketV4(new IPV4Header(new byte[]{},new byte[]{}),new TCP(100,100),null);
+        Packet pk2 = new PacketV4(new IPV4Header(new byte[]{},new byte[]{}),new TCP(200,200),null);
+        TCPPacketWrapper wrapper1 = new TCPPacketWrapper(pk1);
+        wrapper1.setSequenceNumber(100);
+        wrapper1.setNextSequenceNumber(200);
+        TCPPacketWrapper wrapper1_next = new TCPPacketWrapper(null);
+        wrapper1_next.setSequenceNumber(200);;
+        TCPPacketWrapper wrapper2 = new TCPPacketWrapper(pk2);
+        wrapper2.setSequenceNumber(200);
+        wrapper2.setNextSequenceNumber(300);
+        int[] index ={0};
+        CountDownLatch latch = new CountDownLatch(2);
+        new Thread(()->{
+            index[0]=1;
+            queue.put(wrapper1);
+            queue.put(wrapper1_next);
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            index[0]=2;
+            queue.put(wrapper2);
+            latch.countDown();
+        },"t1").start();
+        new Thread(()->{
+            try {
+                TCPPacketWrapper wr1 = queue.poll();
+                assertEquals(wr1,wrapper1);
+                assertEquals(index[0],1);
+                Thread.sleep(50);
+                TCPPacketWrapper wr1_next = queue.peek();
+                assertEquals(wr1_next,wrapper1_next);
+                TCPPacketWrapper wr2 = queue.poll();
+                assertEquals(wr2,wrapper2);
+                assertEquals(index[0],2);
+                latch.countDown();
+
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        },"t2").start();
+        latch.await();
+    }
+    @Test
+    public void waitForWindowSizeTest(){
+        new Thread(()->{
+            try {
+                Thread.sleep(25000);
+                mClientWindowSize = 500;
+                synchronized (mWindowFullLock){
+                    mWindowFullLock.notify();
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        },"tt").start();
+        time = System.currentTimeMillis();
+        waitIfWindowIsFull();
+    }
+    final Object mWindowFullLock = new Object();
+    int mClientWindowSize = 0;
+    long time;
+    public void waitIfWindowIsFull() {
+        synchronized (mWindowFullLock){
+            if (mClientWindowSize == 0){
+                try {
+                    mWindowFullLock.wait(10000);
+                    System.out.println("wait time out after "+( (System.currentTimeMillis() - time)/1000));
+                    if (mClientWindowSize == 0){
+                        waitIfWindowIsFull();
+                    }
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
     }
     @Test
     public void blockingQueueTest(){
 
+        int a = Integer.MAX_VALUE;
+        int b = a+1;
+        System.out.println(a);
+        System.out.println(b);
     }
     public byte[] getByteFromInt(int value,int minByteArraySize){
         int leadingZero = Integer.numberOfLeadingZeros(value);
