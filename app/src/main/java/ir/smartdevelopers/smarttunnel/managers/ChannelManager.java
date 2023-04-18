@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import ir.smartdevelopers.smarttunnel.channels.Channel;
 import ir.smartdevelopers.smarttunnel.channels.ChannelV4TCP;
 import ir.smartdevelopers.smarttunnel.channels.DNSChannel;
+import ir.smartdevelopers.smarttunnel.channels.RemoteConnection;
 import ir.smartdevelopers.smarttunnel.channels.UDPChannel;
 import ir.smartdevelopers.smarttunnel.packet.IPV4Header;
 import ir.smartdevelopers.smarttunnel.packet.Packet;
@@ -18,14 +19,14 @@ import ir.smartdevelopers.smarttunnel.packet.UDP;
 import ir.smartdevelopers.smarttunnel.utils.ByteUtil;
 
 public class ChannelManager {
-    private final Session mSession;
+    private final RemoteConnection mRemoteConnection;
     private final PacketManager mPacketManager;
     private final ConcurrentHashMap<String,Channel> mChannels;
     private final ConcurrentHashMap<String,Thread> mThreads;
     private int udpgwPort;
 
-    public ChannelManager(Session session, PacketManager packetManager,int udpgwPort) {
-        mSession = session;
+    public ChannelManager( RemoteConnection remoteConnection, PacketManager packetManager,int udpgwPort) {
+        mRemoteConnection = remoteConnection;
         mPacketManager = packetManager;
         mChannels = new ConcurrentHashMap<>();
         mThreads = new ConcurrentHashMap<>();
@@ -58,11 +59,11 @@ public class ChannelManager {
                     if (((TCP) pk.getTransmissionProtocol()).getFlag().SYN == 0 ){
                         return;
                     }
-                    channel = new ChannelV4TCP(channelId, pk,mSession,this);
+                    channel = new ChannelV4TCP(channelId, pk,mRemoteConnection,this);
                 }else if (pk.getTransmissionProtocol() instanceof UDP && ByteUtil.getIntValue(pk.getDestPort()) == 53){
-                    channel = new DNSChannel(channelId,pk,mSession,this);
+                    channel = new DNSChannel(channelId,pk,mRemoteConnection,this);
                 } else if (pk.getTransmissionProtocol() instanceof UDP) {
-                    channel = new UDPChannel(channelId,packet,mSession,this,udpgwPort);
+                    channel = new UDPChannel(channelId,packet,mRemoteConnection,this,udpgwPort);
                 }
                 if (channel == null ){
                     return;

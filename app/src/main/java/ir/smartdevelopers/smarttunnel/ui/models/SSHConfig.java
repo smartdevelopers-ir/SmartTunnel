@@ -18,6 +18,10 @@ import java.util.Arrays;
 import java.util.UUID;
 
 import ir.smartdevelopers.smarttunnel.HostKeyRepo;
+import ir.smartdevelopers.smarttunnel.channels.JschRemoteConnection;
+import ir.smartdevelopers.smarttunnel.channels.RemoteConnection;
+import ir.smartdevelopers.smarttunnel.channels.SshjRemoteConnection;
+import ir.smartdevelopers.smarttunnel.exceptions.RemoteConnectionException;
 import ir.smartdevelopers.smarttunnel.managers.PacketManager;
 import ir.smartdevelopers.smarttunnel.packet.Packet;
 import ir.smartdevelopers.smarttunnel.ui.classes.AcceptAllHostRepo;
@@ -59,8 +63,7 @@ public class SSHConfig extends Config {
     private boolean privateKeyLocked;
     private boolean connectionModeLocked;
     private transient HostKeyRepository mHostKeyRepo;
-    private transient JSch mJSch;
-    private transient Session mSession;
+    private transient RemoteConnection mRemoteConnection;
     private transient PacketManager mPacketManager;
     private transient boolean mCanceled;
 
@@ -94,14 +97,10 @@ public class SSHConfig extends Config {
     public void connect() throws ConfigException {
 
         try {
-            mJSch = new JSch();
-            mJSch.setHostKeyRepository(mHostKeyRepo);
+
+            PrivateKey privateKey = mPrivateKey;
             if (mUsePrivateKey && mPrivateKey != null) {
-                KeyPair keyPair = KeyPair.load(mJSch, mPrivateKey.key.getBytes(), null);
-                ByteArrayOutputStream prKeyStream = new ByteArrayOutputStream();
-                keyPair.writePrivateKey(prKeyStream);
-                byte[] prKey = prKeyStream.toByteArray();
-                mJSch.addIdentity(keyPair.getPublicKeyComment(), prKey, keyPair.getPublicKeyBlob(), null);
+                privateKey = null;
             }
             String proxifiedAddress = mServerAddress;
             int proxifiedPort = mServerPort;
@@ -132,22 +131,23 @@ public class SSHConfig extends Config {
                     }
                 }
             }
-            mSession = mJSch.getSession(mUsername, proxifiedAddress, proxifiedPort);
+            JschRemoteConnection connection = new JschRemoteConnection(proxifiedAddress,proxifiedPort,mUsername,mPassword);
+            connection.setPrivateKey(privateKey);
+            mRemoteConnection = connection;
             if (getProxy() instanceof HttpProxy) {
-                mSession.setProxy(new ProxyHTTP(getProxy().getAddress(), getProxy().getPort()));
+                mRemoteConnection.setProxy(getProxy());
             }
-            mSession.setPassword(mPassword);
-            mSession.connect(15000);
+            mRemoteConnection.connect();
             if (mConfigMode == MODE_PROXY) {
                 return;
             }
             ServerPacketListener serverPacketListener = new ServerPacketListener(this);
-            mPacketManager = new PacketManager(mSession, serverPacketListener,mUDPGWPort);
+            mPacketManager = new PacketManager(mRemoteConnection, serverPacketListener,mUDPGWPort);
 
 
 
-        } catch (JSchException jSchException) {
-            throw new ConfigException(jSchException);
+        } catch (RemoteConnectionException e) {
+            throw new ConfigException(e);
         }
     }
 
@@ -155,27 +155,24 @@ public class SSHConfig extends Config {
      * we connect to proxy ssh server first, then we set local port forwarding
      * to destAddress and destPort
      */
-    private void connectSSHProxy(SSHProxy proxy, String destAddress, int destPort) throws ConfigException, JSchException {
+    private void connectSSHProxy(SSHProxy proxy, String destAddress, int destPort) throws ConfigException {
         proxy.getSSHConfig().connect();
-        Session session = proxy.getSSHConfig().getSession();
-        int localPort = session.setPortForwardingL(proxy.getAddress(), proxy.getPort(), destAddress, destPort);
+        RemoteConnection connection = proxy.getSSHConfig().mRemoteConnection;
+        int localPort;
+        try {
+            localPort = connection.startLocalPortForwarding(proxy.getAddress(), proxy.getPort(), destAddress, destPort);
+        } catch (RemoteConnectionException e) {
+            throw new ConfigException(e);
+        }
         proxy.setPort(localPort);
     }
 
     @Override
     public Socket getMainSocket() {
-        if (mSession == null) {
-            return null;
-        }
-        if (!mSession.isConnected()) {
-            return null;
-        }
-        return mSession.getSocket();
+
+        return mRemoteConnection.getMainSocket();
     }
 
-    public Session getSession() {
-        return mSession;
-    }
 
     public String getServerAddress() {
         return mServerAddress;
@@ -284,8 +281,8 @@ public class SSHConfig extends Config {
         if (mPacketManager != null) {
             mPacketManager.destroy();
         }
-        if (mSession != null) {
-            mSession.disconnect();
+        if (mRemoteConnection != null) {
+            mRemoteConnection.disconnect();
         }
         if (mJumper != null) {
             mJumper.getSSHConfig().cancel();

@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
+import android.net.IpPrefix;
 import android.net.Network;
 import android.net.VpnService;
 import android.os.Binder;
@@ -33,6 +34,8 @@ import com.google.gson.Gson;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.Socket;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -229,7 +232,10 @@ public class MyVpnService extends VpnService {
             }
             return;
         }
-        protect(mCurrentConfig.getMainSocket());
+        Socket socket = mCurrentConfig.getMainSocket();
+        if (socket!=null){
+            protect(mCurrentConfig.getMainSocket());
+        }
         try {
 
             VpnService.Builder builder=new VpnService.Builder();
@@ -282,6 +288,7 @@ public class MyVpnService extends VpnService {
 //            builder.addDnsServer("8.8.8.8");
             builder.addRoute("0.0.0.0", 0);
             builder.addRoute("::", 0);
+//            builder.excludeRoute(new IpPrefix(InetAddress.getByAddress(new byte[]{}),32));
             builder.setConfigureIntent(getMainIntent());
             vpnInterface = builder.establish();
 

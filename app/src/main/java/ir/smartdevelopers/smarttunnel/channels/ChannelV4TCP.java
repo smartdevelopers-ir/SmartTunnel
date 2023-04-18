@@ -17,6 +17,7 @@ import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.Random;
 
+import ir.smartdevelopers.smarttunnel.exceptions.RemoteConnectionException;
 import ir.smartdevelopers.smarttunnel.managers.ChannelManager;
 import ir.smartdevelopers.smarttunnel.packet.IPV4Header;
 import ir.smartdevelopers.smarttunnel.packet.Packet;
@@ -29,7 +30,8 @@ import ir.smartdevelopers.smarttunnel.utils.Logger;
 
 public class ChannelV4TCP extends Channel implements TCPController.TcpListener {
 
-    private final Session mSession;
+    private RemoteConnection mRemoteConnection;
+    private RemoteConnection.DirectTCPChannel mChannel;
     /**
      * We read every thing remote sends to us from this inputStream.
      */
@@ -49,17 +51,17 @@ public class ChannelV4TCP extends Channel implements TCPController.TcpListener {
     private PacketV4 mInitialPacket;
 
     private TCPController mTCPController;
-    private Socket socket;
+
     private int mLocalPort;
     /** This is IP header identification, we must increase by 1 for every packet sent to client */
     private short mIpIdentification;
 
-    public ChannelV4TCP(String id, PacketV4 packetV4, Session session, ChannelManager channelManager) {
+    public ChannelV4TCP(String id, PacketV4 packetV4, RemoteConnection remoteConnection, ChannelManager channelManager) {
         super(id, packetV4.getTransmissionProtocol().getSourcePort()
                 , packetV4.getTransmissionProtocol().getDestPort()
                 , packetV4.getIPHeader().getSourceAddress()
                 , packetV4.getIPHeader().getDestAddress());
-        mSession = session;
+        mRemoteConnection = remoteConnection;
         mChannelManager = channelManager;
         mInitialPacket = packetV4;
         mTCPController = new TCPController(packetV4, new TcpPacketCreator(), id, this);
@@ -121,32 +123,13 @@ public class ChannelV4TCP extends Channel implements TCPController.TcpListener {
 //            return;
 //        }
         try {
-//            sshClient = new SshClient("s3.goolha.tk",442,"mostafa","mosi.1371".toCharArray());
-//            sshClient.getContext().getForwardingPolicy().allowForwarding();
-//            int port = sshClient.startLocalForwarding("127.0.0.1",0,
-//                    mInitialPacket.getIPHeader().getDestAddressName(),
-//                    mInitialPacket.getTransmissionProtocol().getDestPortIntValue());
-//            socket = new Socket();
-//            socket.setTcpNoDelay(true);
-//            socket.setReceiveBufferSize(1024*4);
-//            socket.connect(new InetSocketAddress("127.0.0.1",port));
-
-            mLocalPort = mSession.setPortForwardingL("127.0.0.1",0,
+            mChannel = mRemoteConnection.startDirectTCPChannel("127.0.0.1",0,
                     mInitialPacket.getIPHeader().getDestAddressName(),
                     mInitialPacket.getTransmissionProtocol().getDestPortIntValue());
-//            mChannel = (ChannelDirectTCPIP) mSession.openChannel("direct-tcpip");
-//            mChannel.setHost(mInitialPacket.getIPHeader().getDestAddressName());
-//            mChannel.setPort(mInitialPacket.getTransmissionProtocol().getDestPortIntValue());
-//            remoteSelfOutStream = new PipedOutputStream();
-//            mRemoteIn = new PipedInputStream(remoteSelfOutStream, Packet.MAX_SIZE);
-//            mChannel.setOutputStream(remoteSelfOutStream, false);
-            socket = new Socket();
-            socket.setTcpNoDelay(true);
-//            socket.setReceiveBufferSize(Packet.MAX_SIZE);
-            socket.connect(new InetSocketAddress("127.0.0.1",mLocalPort));
-            mRemoteOut = socket.getOutputStream();
-            mRemoteIn = new BufferedInputStream(socket.getInputStream(),Packet.MAX_SIZE);
-//            mChannel.connect(5000);
+
+
+            mRemoteOut = mChannel.getRemoteOut();
+            mRemoteIn = mChannel.getRemoteIn();
 
             mTCPController.onChannelConnected();
 
@@ -156,7 +139,7 @@ public class ChannelV4TCP extends Channel implements TCPController.TcpListener {
 
                 TCPPacketWrapper pkw = mTCPController.getRemotePacketQueue().poll();
 
-                if (socket.isConnected()) {
+                if (mChannel.isConnected()) {
 
                     if (pkw.getPacket().getData() != null && pkw.getPacket().getData().length > 0) {
                         try {
@@ -192,22 +175,14 @@ public class ChannelV4TCP extends Channel implements TCPController.TcpListener {
      */
     @Override
     public void close() {
-//        if (sshClient != null) {
-//            sshClient.disconnect();
-//        }
-        try {
-            mSession.delPortForwardingL(mLocalPort);
-        } catch (JSchException ignore) {
-
-        }
-        if (socket != null) {
+        if (mChannel != null) {
             try {
-                socket.close();
-            } catch (IOException ignore) {
+                mChannel.stop();
+            } catch (RemoteConnectionException ignore) {
 
             }
-
         }
+
         mChannelManager.removeChannel(this);
         if (mRemoteReaderThread != null) {
             mRemoteReaderThread.interrupt();
@@ -230,14 +205,14 @@ public class ChannelV4TCP extends Channel implements TCPController.TcpListener {
         @Override
         public void run() {
 
-            if (socket != null && socket.isConnected()) {
+            if (mChannel != null && mChannel.isConnected()) {
                 try {
                     byte[] buffer = new byte[mTCPController.getMaxSegmentSize()];
 //                    byte[] buffer = new byte[1024*4];
                     int len;
                     boolean psh = false;
                     while (true) {
-                        if (socket.isConnected()) {
+                        if (mChannel.isConnected()) {
                             mTCPController.waitIfWindowIsFull();
                             len = mRemoteIn.read(buffer);
                             if (len > 0) {
@@ -248,7 +223,7 @@ public class ChannelV4TCP extends Channel implements TCPController.TcpListener {
                                 }
                                 byte[] data = Arrays.copyOfRange(buffer, 0, len);
                                 mTCPController.packetFromRemote(data, psh);
-                                if (mRemoteIn.available() <= 0 && socket.isClosed()) {
+                                if (mRemoteIn.available() <= 0 && !mChannel.isConnected()) {
                                     mTCPController.close();
                                     // wait to close from tcp controller
                                 }

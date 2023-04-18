@@ -10,6 +10,7 @@ import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.concurrent.Semaphore;
 
+import ir.smartdevelopers.smarttunnel.exceptions.RemoteConnectionException;
 import ir.smartdevelopers.smarttunnel.managers.ChannelManager;
 import ir.smartdevelopers.smarttunnel.packet.IPV4Header;
 import ir.smartdevelopers.smarttunnel.packet.Packet;
@@ -21,12 +22,12 @@ import ir.smartdevelopers.smarttunnel.utils.Logger;
 
 public class DNSChannel extends Channel {
 
-    private Session mSession;
+    private RemoteConnection mRemoteConnection;
     private InputStream mRemoteIn;
     private OutputStream mRemoteOut;
-    private ChannelDirectTCPIP mChannel;
     private final ChannelManager mChannelManager;
     private PacketV4 mInitialPacket;
+    private RemoteConnection.DirectTCPChannel mChannel;
     /**
      * We must write to remote out first then reade from remote input
      * so before we reade we must wait ro writer to release this lock
@@ -39,13 +40,13 @@ public class DNSChannel extends Channel {
      * when done, set this to null
      */
 //    private PacketV4 mData;
-    public DNSChannel(String id,PacketV4 packetV4, Session session, ChannelManager channelManager) {
+    public DNSChannel(String id,PacketV4 packetV4, RemoteConnection remoteConnection, ChannelManager channelManager) {
         super(id, packetV4.getTransmissionProtocol().getSourcePort()
                 , packetV4.getTransmissionProtocol().getDestPort()
                 , packetV4.getIPHeader().getSourceAddress()
                 , packetV4.getIPHeader().getDestAddress());
 
-        mSession = session;
+        mRemoteConnection = remoteConnection;
         mChannelManager = channelManager;
         mInitialPacket = packetV4;
         readerLock = new Semaphore(0);
@@ -97,16 +98,16 @@ public class DNSChannel extends Channel {
 
     @Override
     public void run() {
-        if (mSession == null || !mSession.isConnected()){
+        if (mRemoteConnection == null || !mRemoteConnection.isConnected()){
             return;
         }
         try {
-            mChannel = (ChannelDirectTCPIP) mSession.openChannel("direct-tcpip");
-            mChannel.setHost(mInitialPacket.getIPHeader().getDestAddressName());
-            mChannel.setPort(mInitialPacket.getTransmissionProtocol().getDestPortIntValue());
-            mRemoteOut = mChannel.getOutputStream();
-            mRemoteIn = mChannel.getInputStream();
-            mChannel.connect(5000);
+            mChannel = mRemoteConnection.startDirectTCPChannel("127.0.0.1",0,
+                    mInitialPacket.getIPHeader().getDestAddressName(),
+                    mInitialPacket.getTransmissionProtocol().getDestPortIntValue());
+            mRemoteOut = mChannel.getRemoteOut();
+            mRemoteIn = mChannel.getRemoteIn();
+
             if (mChannel.isConnected()) {
                 if (mInitialPacket.getData() != null) {
                     try {
@@ -156,9 +157,9 @@ public class DNSChannel extends Channel {
 
     @Override
     public void close() {
-        if (mChannel != null) {
-            mChannel.disconnect();
-        }
+        try {
+            mRemoteConnection.stopDirectTCPChannel(mChannel);
+        } catch (RemoteConnectionException ignore) {}
         mChannelManager.removeChannel(this);
     }
 

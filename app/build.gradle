@@ -63,7 +63,11 @@ dependencies {
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.7'
 // https://mvnrepository.com/artifact/com.sshtools/maverick-synergy-client
     implementation group: 'com.sshtools', name: 'maverick-synergy-client', version: '3.0.10'
-
+// https://mvnrepository.com/artifact/com.hierynomus/sshj
+    implementation group: 'com.hierynomus', name: 'sshj', version: '0.35.0'
+    implementation 'com.madgag.spongycastle:core:1.58.0.0'
+// https://mvnrepository.com/artifact/com.madgag.spongycastle/prov
+    implementation 'com.madgag.spongycastle:prov:1.58.0.0'
 
 
 }

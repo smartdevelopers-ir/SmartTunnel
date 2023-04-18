@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
+import ir.smartdevelopers.smarttunnel.channels.RemoteConnection;
 import ir.smartdevelopers.smarttunnel.packet.IPV4Header;
 import ir.smartdevelopers.smarttunnel.packet.Packet;
 import ir.smartdevelopers.smarttunnel.packet.PacketV4;
@@ -35,9 +36,9 @@ public class PacketManager {
     private ServerPacketListener mServerPacketListener;
 
 
-    public PacketManager(Session session, ServerPacketListener serverPacketListener,int udpgwPort)  {
+    public PacketManager(RemoteConnection connection, ServerPacketListener serverPacketListener, int udpgwPort)  {
         mPacketsQueue = new ConcurrentLinkedQueue<>();
-        mChannelManager = new ChannelManager(session, this,udpgwPort);
+        mChannelManager = new ChannelManager(connection, this,udpgwPort);
         mServerPacketListener = serverPacketListener;
         mLocalPacketWriter = new LocalPacketWriter(mPacketsQueue,mServerPacketListener, this);
         mWriterThread = new Thread(mLocalPacketWriter,"packetManagerLocalWriter");
@@ -100,7 +101,7 @@ public class PacketManager {
             return;
         }
         if (packet instanceof PacketV4){
-            if (!((PacketV4) packet).getIPHeader().getDestAddressName().equals("151.241.94.91")){
+            if (!((PacketV4) packet).getIPHeader().getDestAddressName().equals("151.245.16.92")){
                 return;
             }
         }

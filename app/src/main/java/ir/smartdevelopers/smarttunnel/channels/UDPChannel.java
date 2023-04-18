@@ -21,6 +21,7 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
+import ir.smartdevelopers.smarttunnel.exceptions.RemoteConnectionException;
 import ir.smartdevelopers.smarttunnel.managers.ChannelManager;
 import ir.smartdevelopers.smarttunnel.packet.IPV4Header;
 import ir.smartdevelopers.smarttunnel.packet.Packet;
@@ -31,7 +32,7 @@ import ir.smartdevelopers.smarttunnel.utils.ByteUtil;
 
 public class UDPChannel extends Channel{
     private static final int MAX_CLIENT_ID = 255;
-    private Session mSession;
+    private RemoteConnection mRemoteConnection;
     private BufferedInputStream mRemoteIn;
     private OutputStream mRemoteOut;
     private final ChannelManager mChannelManager;
@@ -53,13 +54,13 @@ public class UDPChannel extends Channel{
 
 
 
-    public UDPChannel(String id, Packet packet, Session session, ChannelManager channelManager, int udpgwPort) {
+    public UDPChannel(String id, Packet packet, RemoteConnection remoteConnection, ChannelManager channelManager, int udpgwPort) {
         super(id, packet.getTransmissionProtocol().getSourcePort()
                 , packet.getTransmissionProtocol().getDestPort()
                 , packet.getSourceAddress()
                 , packet.getDestAddress());
 
-        mSession = session;
+        mRemoteConnection = remoteConnection;
         mChannelManager = channelManager;
         mUdpgwPort = udpgwPort;
         mUDPClients = new ArrayList<>(256);
@@ -116,21 +117,19 @@ public class UDPChannel extends Channel{
             }
         }
         try {
-            mSession.delPortForwardingL(mUdpgwPort);
-        } catch (JSchException ignore) {
-
-        }
+            mRemoteConnection.stopLocalPortForwarding("127.0.0.1",mUdpgwPort);
+        } catch (RemoteConnectionException ignore) {}
         mChannelManager.removeChannel(this);
     }
 
     @Override
     public void run() {
 
-        if (!mSession.isConnected()){
+        if (!mRemoteConnection.isConnected()){
             return;
         }
         try {
-            mSession.setPortForwardingL("127.0.0.1",mUdpgwPort,"127.0.0.1",mUdpgwPort);
+            mRemoteConnection.startLocalPortForwarding("127.0.0.1",mUdpgwPort,"127.0.0.1",mUdpgwPort);
             mSocket = new Socket();
             mSocket.setTcpNoDelay(true);
             mSocket.connect(new InetSocketAddress("127.0.0.1",mUdpgwPort));
