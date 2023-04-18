@@ -9,6 +9,7 @@ public class ConfigListModel implements Comparable<ConfigListModel>{
     public String type;
     private transient boolean selected;
     private long timeCreated;
+    public String note;
 
     public ConfigListModel(String name, String configId,boolean selected,String type) {
         this.name = name;

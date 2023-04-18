@@ -15,6 +15,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -35,6 +36,7 @@ import java.util.Objects;
 import ir.smartdevelopers.smarttunnel.MyVpnService;
 import ir.smartdevelopers.smarttunnel.R;
 import ir.smartdevelopers.smarttunnel.databinding.FragmentHomeBinding;
+import ir.smartdevelopers.smarttunnel.ui.activities.SettingsActivity;
 import ir.smartdevelopers.smarttunnel.ui.models.ConfigListModel;
 import ir.smartdevelopers.smarttunnel.ui.utils.PrefsUtil;
 
@@ -148,8 +150,22 @@ public class HomeFragment extends Fragment {
                 connect();
             }
         });
+        mBinding.toolbar.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == R.id.action_settings){
+                openSettingsActivity();
+            }
+            return true;
+        });
 
+        ConfigListModel currentConfig = PrefsUtil.getSelectedConfig(requireContext());
+        if (currentConfig != null && !TextUtils.isEmpty(currentConfig.note)){
+            mBinding.txtConnectionNote.setText(currentConfig.note);
+        }
 
+    }
+
+    private void openSettingsActivity() {
+        startActivity(new Intent(requireContext(), SettingsActivity.class));
     }
 
     private void connect() {

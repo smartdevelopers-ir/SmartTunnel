@@ -1,6 +1,6 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.FakeSMS" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.SmartTunnel" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Primary brand color. -->
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryVariant">@color/colorPrimaryVariant</item>
@@ -20,6 +20,7 @@
         <item name="android:windowBackground">@color/colorWindowBackground</item>
         <item name="android:windowLightStatusBar">true</item>
     </style>
+
     <style name="AppBarLayoutStyle" parent="Widget.MaterialComponents.AppBarLayout.Surface">
         <item name="background">@color/white</item>
         <item name="colorPrimary">@color/white</item>
@@ -45,6 +46,9 @@
         <item name="colorOnSecondary">@color/colorActiveText</item>
         <item name="colorPrimary">@color/colorActiveText</item>
 
+    </style>
+    <style name="RadioButtonStyle">
+        <item name="android:layoutDirection">rtl</item>
     </style>
 
 </resources>

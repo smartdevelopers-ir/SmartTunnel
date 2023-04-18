@@ -5,6 +5,10 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission
+        android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
 
     <application
         android:allowBackup="true"
@@ -14,15 +18,67 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.FakeSMS"
+        android:theme="@style/Theme.SmartTunnel"
         tools:targetApi="31">
+        <activity
+            android:name=".ui.activities.SettingsActivity"
+            android:exported="false" />
         <activity
             android:name=".ui.activities.AddSSHConfigActivity"
             android:exported="false" />
+
         <activity
             android:name="ir.smartdevelopers.smarttunnel.TestMainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:grantUriPermissions="true"
+            >
+            <intent-filter
+                android:priority="300">
 
+                <action
+                    android:name="android.intent.action.VIEW" />
+
+                <category
+                    android:name="android.intent.category.BROWSABLE" />
+
+                <category
+                    android:name="android.intent.category.DEFAULT" />
+
+                <data
+                    android:mimeType="*/*" />
+                <data android:host="*"/>
+
+                <data
+                    android:scheme="content" />
+
+                <data
+                    android:pathPattern=".*\\.st" />
+
+
+            </intent-filter>
+
+            <intent-filter android:priority="300">
+
+                <action
+                    android:name="android.intent.action.VIEW" />
+
+                <category
+                    android:name="android.intent.category.BROWSABLE" />
+
+                <category
+                    android:name="android.intent.category.DEFAULT" />
+
+                <data
+                    android:mimeType="*/*" />
+                <data android:host="*"/>
+                <data
+                    android:scheme="file" />
+
+
+                <data
+                    android:pathPattern=".*\\.st" />
+
+            </intent-filter>
             <!-- <intent-filter> -->
             <!-- <action android:name="android.intent.action.MAIN" /> -->
 

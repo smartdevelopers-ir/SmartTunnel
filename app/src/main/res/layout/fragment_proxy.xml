@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorWindowBackground"
+    >
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    >
+    <RadioGroup
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        >
+        <com.google.android.material.radiobutton.MaterialRadioButton
+            android:id="@+id/radNone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            style="@style/RadioButtonStyle"
+            android:text="@string/none"
+            />
+        <com.google.android.material.radiobutton.MaterialRadioButton
+            android:id="@+id/radHttp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            style="@style/RadioButtonStyle"
+            android:text="@string/http_https"
+            />
+        <com.google.android.material.radiobutton.MaterialRadioButton
+            android:id="@+id/radSsh"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            style="@style/RadioButtonStyle"
+            android:text="@string/ssh_proxy"
+            />
+    </RadioGroup>
+    <FrameLayout
+        android:id="@+id/proxyContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        />
+
+</LinearLayout>
+</ScrollView>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+<Preference
+    app:title="@string/proxy"
+    app:key="@string/key_proxy"
+    app:icon="@drawable/ic_proxy"
+    app:allowDividerBelow="true"
+    />
+    <Preference
+        app:title="@string/dns"
+        app:key="@string/key_dns"
+        app:icon="@drawable/ic_dns"
+        app:allowDividerAbove="true"
+        />
+</PreferenceScreen>

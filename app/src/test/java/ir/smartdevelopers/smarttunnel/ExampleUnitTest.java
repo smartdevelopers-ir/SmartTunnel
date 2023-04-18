@@ -24,6 +24,7 @@ import ir.smartdevelopers.smarttunnel.packet.TCP;
 import ir.smartdevelopers.smarttunnel.packet.TCPFlag;
 import ir.smartdevelopers.smarttunnel.packet.TCPOption;
 import ir.smartdevelopers.smarttunnel.packet.TCPPacketWrapper;
+import ir.smartdevelopers.smarttunnel.ui.utils.Util;
 import ir.smartdevelopers.smarttunnel.utils.ByteUtil;
 
 /**
@@ -124,6 +125,14 @@ public class ExampleUnitTest {
     public void hashTest(){
         String hash = DigestUtils.sha1Hex("mostafa");
         assertEquals("4755bfab4052cc27342fd251db714407b842eef3",hash);
+    }
+    @Test
+    public void encryptionTest(){
+        String s = "salam Checotri ?";
+        byte[] encrypted = Util.encrypt(s);
+        assertNotNull(encrypted);
+        String decryoted = Util.decrypt(encrypted);
+        assertEquals(s,decryoted);
     }
     @Test
     public void TCPOptionTest(){
@@ -229,6 +238,13 @@ public class ExampleUnitTest {
         }
     }
     @Test
+    public void tcpFlagTest(){
+        TCPFlag flag = new TCPFlag();
+        flag.SYN = 1;
+        flag.ACK = 1;
+        assertEquals(flag.toString(),"[ACK][SYN]");
+    }
+    @Test
     public void blockingQueueTest(){
 
         int a = Integer.MAX_VALUE;
@@ -266,4 +282,5 @@ public class ExampleUnitTest {
         }
         return bytes;
     }
+
 }

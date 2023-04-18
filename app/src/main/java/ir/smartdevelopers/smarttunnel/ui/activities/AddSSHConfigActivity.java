@@ -22,6 +22,7 @@ import java.util.UUID;
 import ir.smartdevelopers.smarttunnel.R;
 import ir.smartdevelopers.smarttunnel.databinding.ActivityAddSshconfigBinding;
 import ir.smartdevelopers.smarttunnel.ui.fragments.AdvancedSSHConfigFragment;
+import ir.smartdevelopers.smarttunnel.ui.fragments.ExportSshConfigDialog;
 import ir.smartdevelopers.smarttunnel.ui.fragments.SimpleSSHConfigFragment;
 import ir.smartdevelopers.smarttunnel.ui.models.ConfigListModel;
 import ir.smartdevelopers.smarttunnel.ui.models.SSHConfig;
@@ -87,6 +88,26 @@ public class AddSSHConfigActivity extends AppCompatActivity {
 
             }
         });
+        int mode = getIntent().getIntExtra(KEY_MODE,MODE_ADD);
+        if (mode == MODE_EDIT){
+            String configJson = getIntent().getStringExtra(KEY_CONFIG_MODEL);
+            if (!TextUtils.isEmpty(configJson)){
+                ConfigListModel model = new Gson().fromJson(configJson,ConfigListModel.class);
+                try {
+                    SSHConfig config = (SSHConfig) ConfigsUtil.loadConfig(this,model.configId,model.type);
+                    if (config != null){
+                        SSHConfig.Builder builder = config.toBuilder();
+                        mViewModel.setSSHConfig(builder);
+                        if (config.getJumper() != null) {
+                            mViewModel.setJumperConfigBuilder(config.getJumper().getSSHConfig().toBuilder());
+                        }
+                    }
+
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
     }
 
     private void showAdvancedSSHSettingsFragment(boolean animate,Bundle data) {
@@ -110,12 +131,14 @@ public class AddSSHConfigActivity extends AppCompatActivity {
 
     private void openExportDialog() {
         if (checkConfig()){
-
+            getSupportFragmentManager().beginTransaction()
+                    .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+                    .addToBackStack("export_config")
+                    .add(android.R.id.content,ExportSshConfigDialog.getInstance())
+                    .commit();
         }
     }
-    private void exportConfig() {
 
-    }
     private void saveConfig() {
         ConfigListModel configListModel= null;
         if (checkConfig()){
@@ -130,6 +153,7 @@ public class AddSSHConfigActivity extends AppCompatActivity {
                 String json = new Gson().toJson(configListModel);
                 Intent data = new Intent();
                 data.putExtra(KEY_CONFIG_MODEL,json);
+                data.putExtra(KEY_MODE,getIntent().getIntExtra(KEY_MODE,MODE_ADD));
                 setResult(RESULT_OK,data);
                 finish();
             }
@@ -162,7 +186,6 @@ public class AddSSHConfigActivity extends AppCompatActivity {
         if (builder.getConnectionType() == SSHConfig.CONNECTION_TYPE_SSH_PROXY) {
             SSHConfig.Builder jumper = mViewModel.getJumperConfigBuilder();
             if (TextUtils.isEmpty(jumper.getServerAddress()) ||
-                    TextUtils.isEmpty(jumper.getName()) ||
                     TextUtils.isEmpty(jumper.getUsername()) ||
                     jumper.getServerPort() == 0 ||
                     (jumper.isUsePrivateKey() ? jumper.getPrivateKey() == null : TextUtils.isEmpty(jumper.getPassword()))

@@ -48,6 +48,8 @@ android {
 dependencies {
 
     implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.preference:preference:1.2.0'
+    implementation 'androidx.documentfile:documentfile:1.0.1'
     implementation 'com.google.android.material:material:1.8.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     testImplementation 'junit:junit:4.13.2'
@@ -57,6 +59,10 @@ dependencies {
     implementation 'dnsjava:dnsjava:2.1.9'
     implementation 'commons-codec:commons-codec:1.15'
     implementation 'com.google.code.gson:gson:2.8.6'
+// https://mvnrepository.com/artifact/org.slf4j/slf4j-api
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.7'
+// https://mvnrepository.com/artifact/com.sshtools/maverick-synergy-client
+    implementation group: 'com.sshtools', name: 'maverick-synergy-client', version: '3.0.10'
 
 
 

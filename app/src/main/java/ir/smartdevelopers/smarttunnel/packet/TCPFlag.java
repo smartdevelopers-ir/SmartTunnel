@@ -1,5 +1,7 @@
 package ir.smartdevelopers.smarttunnel.packet;
 
+import java.lang.reflect.Field;
+
 public class TCPFlag {
     public byte CWR;
     public byte ECE;
@@ -61,5 +63,21 @@ public class TCPFlag {
         return  (byte) ((CWR << 7) | (ECE << 6) | (URG << 5) |
                         (ACK << 4) | (PSH << 3) | (RST << 2) |
                         (SYN << 1) | FIN);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        Field[] fields = getClass().getFields();
+        for (Field f : fields){
+            try {
+                if (f.getByte(this) == 1){
+                    builder.append("[").append(f.getName()).append("]");
+                }
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return builder.toString();
     }
 }

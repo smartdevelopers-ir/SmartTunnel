@@ -2,10 +2,13 @@ package ir.smartdevelopers.smarttunnel.ui.fragments;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
@@ -20,14 +23,21 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.gson.Gson;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
+import java.util.Objects;
 
 import ir.smartdevelopers.smarttunnel.R;
 import ir.smartdevelopers.smarttunnel.databinding.FragmentConfigsBinding;
 import ir.smartdevelopers.smarttunnel.ui.activities.AddSSHConfigActivity;
 import ir.smartdevelopers.smarttunnel.ui.adapters.ConfigListAdapter;
+import ir.smartdevelopers.smarttunnel.ui.interfaces.OnCompleteListener;
 import ir.smartdevelopers.smarttunnel.ui.interfaces.OnListItemClickListener;
 import ir.smartdevelopers.smarttunnel.ui.models.ConfigListModel;
+import ir.smartdevelopers.smarttunnel.ui.models.SSHConfig;
+import ir.smartdevelopers.smarttunnel.ui.utils.ConfigsUtil;
 import ir.smartdevelopers.smarttunnel.ui.utils.PrefsUtil;
 
 public class ConfigsFragment extends Fragment {
@@ -64,6 +74,17 @@ public class ConfigsFragment extends Fragment {
                 }
             }
     );
+
+    private ActivityResultLauncher<String> importActivityLuncher = registerForActivityResult(new ActivityResultContracts.GetContent(),
+            new ActivityResultCallback<Uri>() {
+                @Override
+                public void onActivityResult(Uri result) {
+                    processImport(result);
+                }
+            });
+
+
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -142,6 +163,8 @@ public class ConfigsFragment extends Fragment {
         mBinding.toolbar.setOnMenuItemClickListener(item -> {
             if (item.getItemId() == R.id.action_add){
                 openAddConfigActivity();
+            } else if (item.getItemId() == R.id.action_import) {
+                openImportActivity();
             }
             return true;
         });
@@ -152,6 +175,45 @@ public class ConfigsFragment extends Fragment {
         }
     }
 
+    private void openImportActivity() {
+        importActivityLuncher.launch("*/*");
+    }
+    private void processImport(Uri uri) {
+        if (uri == null){
+            return;
+        }
+        if (!uri.toString().endsWith(".st")){
+            Toast.makeText(getContext(), R.string.config_not_supported, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        try {
+            InputStream inputStream = requireContext().getContentResolver().openInputStream(uri);
+            ConfigsUtil.importConfig(inputStream, new OnCompleteListener<Pair<String, String>>() {
+                @Override
+                public void onComplete(Pair<String, String> result) {
+                    if (result == null){
+                        Toast.makeText(getContext(), R.string.error_parsing_config, Toast.LENGTH_SHORT).show();
+                    }else {
+                        if (Objects.equals(result.first, SSHConfig.CONFIG_TYPE)){
+                            SSHConfig config = new Gson().fromJson(result.second,SSHConfig.class);
+                            ConfigListModel model = new ConfigListModel(config.getName(),
+                                    config.getId(),mAdapter.getItemCount()==0,
+                                    config.getType());
+                            mAdapter.addConfig(model);
+                            PrefsUtil.addConfig(requireContext(),model);
+                            try {
+                                ConfigsUtil.saveConfig(requireContext(),config);
+                            } catch (IOException e) {
+                                Toast.makeText(requireContext(), R.string.error_parsing_config, Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    }
+                }
+            });
+        } catch (Exception e) {
+            Toast.makeText(getContext(), R.string.error_parsing_config, Toast.LENGTH_SHORT).show();
+        }
+    }
     private void openAddConfigActivity() {
         Intent intent = new Intent(requireContext(),AddSSHConfigActivity.class);
         intent.putExtra(AddSSHConfigActivity.KEY_MODE,AddSSHConfigActivity.MODE_ADD);

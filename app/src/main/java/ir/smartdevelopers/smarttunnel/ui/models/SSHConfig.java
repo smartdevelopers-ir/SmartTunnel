@@ -2,6 +2,7 @@ package ir.smartdevelopers.smarttunnel.ui.models;
 
 import android.text.TextUtils;
 
+import com.jcraft.jsch.HostKeyRepository;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.KeyPair;
@@ -19,6 +20,7 @@ import java.util.UUID;
 import ir.smartdevelopers.smarttunnel.HostKeyRepo;
 import ir.smartdevelopers.smarttunnel.managers.PacketManager;
 import ir.smartdevelopers.smarttunnel.packet.Packet;
+import ir.smartdevelopers.smarttunnel.ui.classes.AcceptAllHostRepo;
 import ir.smartdevelopers.smarttunnel.ui.exceptions.ConfigException;
 import ir.smartdevelopers.smarttunnel.utils.ByteUtil;
 import ir.smartdevelopers.smarttunnel.utils.Logger;
@@ -50,7 +52,13 @@ public class SSHConfig extends Config {
     private int mConnectionType;
     private String mPayload;
     private String mServerNameIndicator;
-    private HostKeyRepo mHostKeyRepo;
+    private boolean serverAddressLocked;
+    private boolean serverPortLocked;
+    private boolean usernameLocked;
+    private boolean passwordLocked;
+    private boolean privateKeyLocked;
+    private boolean connectionModeLocked;
+    private transient HostKeyRepository mHostKeyRepo;
     private transient JSch mJSch;
     private transient Session mSession;
     private transient PacketManager mPacketManager;
@@ -58,13 +66,14 @@ public class SSHConfig extends Config {
 
     private SSHConfig(String name, String id, String type) {
         super(name, id, type);
+        mHostKeyRepo = new AcceptAllHostRepo();
     }
 
     public SSHConfig(String name, String id, String type, int configMode, String serverAddress,
                      int serverPort, String username, String password,
                      boolean usePrivateKey, PrivateKey privateKey, int UDPGWPort,
                      SSHProxy jumper, int connectionType, String payload,
-                     String serverNameIndicator, HostKeyRepo hostKeyRepo) {
+                     String serverNameIndicator) {
         super(name, id, type);
         mConfigMode = configMode;
         mServerAddress = serverAddress;
@@ -78,7 +87,7 @@ public class SSHConfig extends Config {
         mConnectionType = connectionType;
         mPayload = payload;
         mServerNameIndicator = serverNameIndicator;
-        mHostKeyRepo = hostKeyRepo;
+        mHostKeyRepo = new AcceptAllHostRepo();
     }
 
     @Override
@@ -133,7 +142,8 @@ public class SSHConfig extends Config {
                 return;
             }
             ServerPacketListener serverPacketListener = new ServerPacketListener(this);
-            mPacketManager = new PacketManager(mSession, serverPacketListener);
+            mPacketManager = new PacketManager(mSession, serverPacketListener,mUDPGWPort);
+
 
 
         } catch (JSchException jSchException) {
@@ -255,11 +265,11 @@ public class SSHConfig extends Config {
         mServerNameIndicator = serverNameIndicator;
     }
 
-    public HostKeyRepo getHostKeyRepo() {
+    public HostKeyRepository getHostKeyRepo() {
         return mHostKeyRepo;
     }
 
-    public void setHostKeyRepo(HostKeyRepo hostKeyRepo) {
+    public void setHostKeyRepo(HostKeyRepository hostKeyRepo) {
         mHostKeyRepo = hostKeyRepo;
     }
 
@@ -291,6 +301,55 @@ public class SSHConfig extends Config {
         mPacketManager.sendToRemoteServer(packet);
     }
 
+    public boolean isServerAddressLocked() {
+        return serverAddressLocked;
+    }
+
+    public void setServerAddressLocked(boolean serverAddressLocked) {
+        this.serverAddressLocked = serverAddressLocked;
+    }
+
+    public boolean isServerPortLocked() {
+        return serverPortLocked;
+    }
+
+    public void setServerPortLocked(boolean serverPortLocked) {
+        this.serverPortLocked = serverPortLocked;
+    }
+
+    public boolean isUsernameLocked() {
+        return usernameLocked;
+    }
+
+    public void setUsernameLocked(boolean usernameLocked) {
+        this.usernameLocked = usernameLocked;
+    }
+
+    public boolean isPasswordLocked() {
+        return passwordLocked;
+    }
+
+    public void setPasswordLocked(boolean passwordLocked) {
+        this.passwordLocked = passwordLocked;
+    }
+
+    public boolean isPrivateKeyLocked() {
+        return privateKeyLocked;
+    }
+
+    public void setPrivateKeyLocked(boolean privateKeyLocked) {
+        this.privateKeyLocked = privateKeyLocked;
+    }
+
+    public boolean isConnectionModeLocked() {
+        return connectionModeLocked;
+    }
+
+    public void setConnectionModeLocked(boolean connectionModeLocked) {
+        this.connectionModeLocked = connectionModeLocked;
+
+    }
+
 
     private static class ServerPacketListener implements PacketManager.ServerPacketListener {
 
@@ -310,6 +369,25 @@ public class SSHConfig extends Config {
         }
     }
 
+    public Builder toBuilder(){
+        Builder builder = new Builder(getName(),mConfigMode,getServerAddress(),getServerPort(),
+                getUsername(),getPassword());
+        builder.setJumper(mJumper)
+                .setPrivateKey(mPrivateKey)
+                .setUsePrivateKey(mUsePrivateKey)
+                .setId(getId())
+                .setPayload(mPayload)
+                .setConnectionType(mConnectionType)
+                .setUDPGWPort(mUDPGWPort)
+                .setServerNameIndicator(mServerNameIndicator)
+                .setServerAddressLocked(serverAddressLocked)
+                .setServerPortLocked(serverPortLocked)
+                .setUsernameLocked(usernameLocked)
+                .setPasswordLocked(passwordLocked)
+                .setPrivateKeyLocked(privateKeyLocked)
+                .setConnectionModeLocked(connectionModeLocked);
+        return builder;
+    }
     public static class Builder {
         private String id;
         private String name;
@@ -318,7 +396,6 @@ public class SSHConfig extends Config {
         private int mServerPort;
         private String mUsername;
         private String mPassword;
-        private HostKeyRepo mHostKeyRepo;
         private boolean mUsePrivateKey;
         private PrivateKey mPrivateKey;
         private int mUDPGWPort;
@@ -326,20 +403,25 @@ public class SSHConfig extends Config {
         private int mConnectionType;
         private String mPayload;
         private String mServerNameIndicator;
+        private boolean serverAddressLocked;
+        private boolean serverPortLocked;
+        private boolean usernameLocked;
+        private boolean passwordLocked;
+        private boolean privateKeyLocked;
+        private boolean connectionModeLocked;
 
         public Builder(int configMode) {
             mConfigMode = configMode;
         }
 
         public Builder(String name, int configMode, String serverAddress, int serverPort, String username,
-                       String password, HostKeyRepo hostKeyRepo) {
+                       String password) {
             this.name = name;
             mConfigMode = configMode;
             mServerAddress = serverAddress;
             mServerPort = serverPort;
             mUsername = username;
             mPassword = password;
-            mHostKeyRepo = hostKeyRepo;
         }
 
         public Builder setId(String id) {
@@ -374,11 +456,6 @@ public class SSHConfig extends Config {
 
         public Builder setPassword(String password) {
             mPassword = password;
-            return this;
-        }
-
-        public Builder setHostKeyRepo(HostKeyRepo hostKeyRepo) {
-            mHostKeyRepo = hostKeyRepo;
             return this;
         }
 
@@ -445,10 +522,6 @@ public class SSHConfig extends Config {
             return mPassword;
         }
 
-        public HostKeyRepo getHostKeyRepo() {
-            return mHostKeyRepo;
-        }
-
         public boolean isUsePrivateKey() {
             return mUsePrivateKey;
         }
@@ -491,11 +564,63 @@ public class SSHConfig extends Config {
             return new SSHConfig(name, id, CONFIG_TYPE,
                     mConfigMode, mServerAddress, mServerPort, mUsername,
                     mPassword, mUsePrivateKey, mPrivateKey, mUDPGWPort,
-                    mJumper, mConnectionType, mPayload, mServerNameIndicator,
-                    mHostKeyRepo);
+                    mJumper, mConnectionType, mPayload, mServerNameIndicator);
 
         }
 
 
+        public boolean isServerAddressLocked() {
+            return serverAddressLocked;
+        }
+
+        public Builder setServerAddressLocked(boolean serverAddressLocked) {
+            this.serverAddressLocked = serverAddressLocked;
+            return this;
+        }
+
+        public boolean isServerPortLocked() {
+            return serverPortLocked;
+        }
+
+        public Builder setServerPortLocked(boolean serverPortLocked) {
+            this.serverPortLocked = serverPortLocked;
+            return this;
+        }
+
+        public boolean isUsernameLocked() {
+            return usernameLocked;
+        }
+
+        public Builder setUsernameLocked(boolean usernameLocked) {
+            this.usernameLocked = usernameLocked;
+            return this;
+        }
+
+        public boolean isPasswordLocked() {
+            return passwordLocked;
+        }
+
+        public Builder setPasswordLocked(boolean passwordLocked) {
+            this.passwordLocked = passwordLocked;
+            return this;
+        }
+
+        public boolean isPrivateKeyLocked() {
+            return privateKeyLocked;
+        }
+
+        public Builder setPrivateKeyLocked(boolean privateKeyLocked) {
+            this.privateKeyLocked = privateKeyLocked;
+            return this;
+        }
+
+        public boolean isConnectionModeLocked() {
+            return connectionModeLocked;
+        }
+
+        public Builder setConnectionModeLocked(boolean connectionModeLocked) {
+            this.connectionModeLocked = connectionModeLocked;
+            return this;
+        }
     }
 }

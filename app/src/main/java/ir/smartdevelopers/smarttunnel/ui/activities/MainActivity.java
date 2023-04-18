@@ -2,6 +2,7 @@ package ir.smartdevelopers.smarttunnel.ui.activities;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 import android.os.Bundle;
 import android.view.MenuItem;
@@ -10,6 +11,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 
 import ir.smartdevelopers.smarttunnel.R;
+import ir.smartdevelopers.smarttunnel.ui.fragments.AppsFragment;
 import ir.smartdevelopers.smarttunnel.ui.fragments.ConfigsFragment;
 import ir.smartdevelopers.smarttunnel.ui.fragments.HomeFragment;
 
@@ -20,6 +22,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mBottomNavigationView = findViewById(R.id.bottomNavigation);
+
 
         mBottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
             @Override
@@ -36,10 +39,14 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         });
+
     }
 
-    private void goToAppsFragment() {
 
+    private void goToAppsFragment() {
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.mainFragmentContainer,new AppsFragment())
+                .commit();
     }
 
     private void goToLogFragment() {
@@ -56,5 +63,15 @@ public class MainActivity extends AppCompatActivity {
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.mainFragmentContainer,new HomeFragment())
                 .commit();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (!(getSupportFragmentManager().findFragmentById(R.id.mainFragmentContainer) instanceof HomeFragment)){
+//            goToHomeFragment();
+            mBottomNavigationView.setSelectedItemId(R.id.action_home);
+            return;
+        }
+        super.onBackPressed();
     }
 }

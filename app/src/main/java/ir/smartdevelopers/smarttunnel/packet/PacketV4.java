@@ -95,11 +95,12 @@ public class PacketV4 extends Packet{
     public String toString() {
        if (mTransmissionProtocol instanceof TCP){
            TCP tcp = (TCP) mTransmissionProtocol;
+
            return String.format(Locale.ENGLISH,
                    "%s:%d to %s:%d flag :%s - seq = %d - ack = %d - dataLength = %d",
                    getIPHeader().getSourceAddressName(),tcp.getSourcePortIntValue(),
                    getIPHeader().getDestAddressName(),tcp.getDestPortIntValue(),
-                   Integer.toBinaryString(tcp.getFlag().getByte()),
+                   tcp.getFlag().toString(),
                    tcp.getSequenceNumberIntValue(),tcp.getAcknowledgmentNumberIntValue(),
                    getData() == null ? 0 : getData().length);
        }

@@ -52,6 +52,7 @@ public class TCPController {
 
     private final TcpListener mTcpListener;
 
+
     public TCPController(Packet initialPacket, Packet.PacketCreator packetCreator,
                          String name, TcpListener tcpListener) {
         mPacketCreator = packetCreator;
@@ -81,7 +82,17 @@ public class TCPController {
 
         mPacketProcessor = new PacketProcessor();
         mPacketProcessor.start();
-        mKeepAliveThread = new KeepAliveThread(45);
+        mKeepAliveThread = new KeepAliveThread(45, mName, new KeepAliveThread.KeepAliveWorker() {
+            @Override
+            public void doWork() {
+                sendKeepAlivePacket();
+            }
+
+            @Override
+            public void onTimeOut() {
+                mTcpListener.onTermination();
+            }
+        });
     }
 
     public void packetFromClient(Packet packet){
@@ -113,7 +124,13 @@ public class TCPController {
         } else {
             mState = State.LAST_ACK;
         }
-        Packet packet = makeTcpPacket(null, TCPFlag.FIN_ACK(),null);
+        byte[] data=null;
+        TCPFlag flag = TCPFlag.FIN_ACK();
+        if (mClientPackets.size()>0){
+            data=mClientPackets.getLast().getPacket().getData();
+            flag.PSH = 1;
+        }
+        Packet packet = makeTcpPacket(data, flag,null);
         mKeepAliveThread.resetTimer();
         sendToLocal(packet);
     }
@@ -132,7 +149,13 @@ public class TCPController {
 
     private void sendCloseConnectionToClient() {
 
-        Packet closePacket = makeTcpPacket(null, TCPFlag.RST_ACK(),null);
+        byte[] data=null;
+        TCPFlag flag = TCPFlag.RST_ACK();
+        if (mClientPackets.size()>0){
+            data=mClientPackets.getLast().getPacket().getData();
+            flag.PSH = 1;
+        }
+        Packet closePacket = makeTcpPacket(data, flag,null);
         mKeepAliveThread.resetTimer();
         sendToLocal(closePacket);
 
@@ -207,7 +230,8 @@ public class TCPController {
     private void updateClientSeqNumber(Packet pk) {
         TCP tcp = (TCP) pk.getTransmissionProtocol();
         mClientSeqNumber = tcp.getSequenceNumberIntValue();
-        mClientNexSeqNumber = mClientSeqNumber + (tcp.getFlag().SYN == 1 ? 1 : (pk.getData() != null ? pk.getData().length : 0));
+        mClientNexSeqNumber = mClientSeqNumber +
+                (pk.getData() != null ? pk.getData().length : ((tcp.getFlag().SYN ==1 || tcp.getFlag().FIN ==1) ? 1 : 0));
         mKeepAliveThread.resetTimer();
 
     }
@@ -253,6 +277,7 @@ public class TCPController {
             mKeepAliveThread.cancel();
             mKeepAliveThread.interrupt();
         }
+
     }
 
     public void close() {
@@ -363,10 +388,7 @@ public class TCPController {
                          option.setWindowScale((byte) mServerWindowSizeScale);
                          option.setSelectiveAcknowledgmentPermitted(true);
                         sendACKToClient(option);
-                    } else if (newPacketFlag.RST == 1) {
-                        // reset connection , close connection
-                        mTcpListener.onTermination();
-                    } else if (newPacketFlag.PSH == 1) {
+                    } if (newPacketFlag.PSH == 1) {
                         // client is sending data to remote server
                          TCPPacketWrapper wrapper = createPacketWrapper(pk,newPacketTCPSection.getSequenceNumberIntValue(),
                                  newPacketTCPSection.getSequenceNumberIntValue() +
@@ -374,21 +396,7 @@ public class TCPController {
                                  newPacketTCPSection.getAcknowledgmentNumberIntValue(),true);
                          putToQueue(wrapper);
                          updateClientSeqNumber(pk);
-                    } else if (newPacketFlag.FIN == 1) {
-                        updateClientSeqNumber(pk);
-                        if (mState == TCP.State.ESTABLISHED) {
-                            mState = TCP.State.CLOSE_WAIT;
-                            sendACKToClient(null);
-                            mState = TCP.State.LAST_ACK;
-                            sendFINPacket();
-                        } else {
-                            /*In this case we must be in FIN_WAIT_2 or TIME_WAIT state
-                               We waiting for time out*/
-                            mState = TCP.State.TIME_WAIT;
-                            sendACKToClient(null);
-                        }
-
-                    } else if (newPacketFlag.ACK == 1) {
+                    } else if (newPacketFlag.ACK == 1 && newPacketFlag.FIN == 0 && newPacketFlag.RST == 0) {
                         // There is 3 options :
                         // 1. This new packet is acknowledge packet
                         // 3. This new packet is resuming of data from client
@@ -424,7 +432,25 @@ public class TCPController {
                         }
 
                     }
+                     if (newPacketFlag.RST == 1) {
+                        // reset connection , close connection
+                        mTcpListener.onTermination();
+                    }
+                    if (newPacketFlag.FIN == 1) {
+                         updateClientSeqNumber(pk);
+                         if (mState == TCP.State.ESTABLISHED) {
+                             mState = TCP.State.CLOSE_WAIT;
+                             sendACKToClient(null);
+                             mState = TCP.State.LAST_ACK;
+                             sendFINPacket();
+                         } else {
+                            /*In this case we must be in FIN_WAIT_2 or TIME_WAIT state
+                               We waiting for time out*/
+                             mState = TCP.State.TIME_WAIT;
+                             sendACKToClient(null);
+                         }
 
+                     }
 
                 }
             }
@@ -482,9 +508,7 @@ public class TCPController {
                 }
             }
             if (removeIndex != -1){
-                for (int i = removeIndex ;i >= 0  ;i--){
-                    mClientPackets.remove(i);
-                }
+                mClientPackets.subList(0, removeIndex + 1).clear();
             }
         }
     }
@@ -533,57 +557,6 @@ public class TCPController {
         return wrapper;
     }
 
-
-    private  class KeepAliveThread extends Thread {
-        private boolean mStop = false;
-        private final int mIntervalSecond;
-        private long triggerTime;
-        private boolean mKeepAliveSent = false;
-
-        public KeepAliveThread( int intervalSecond) {
-            mIntervalSecond = intervalSecond;
-            setName(mName + "_keep-alive");
-        }
-
-        @Override
-        public void run() {
-            triggerTime = System.currentTimeMillis() + mIntervalSecond * 1000L;
-            while (!mStop) {
-                try {
-                    long sleep = triggerTime - System.currentTimeMillis();
-                    if (sleep > 0) {
-                        Thread.sleep(sleep + 1);
-                        continue;
-                    }
-                    if (mKeepAliveSent) {
-                        break;
-                    }
-                    sendKeepAlivePacket();
-                    mKeepAliveSent = true;
-                    resetTimer(false);
-                } catch (InterruptedException ignore) {
-
-                }
-            }
-            mTcpListener.onTermination();
-        }
-
-        public void resetTimer() {
-            resetTimer(true);
-        }
-
-        private void resetTimer(boolean resetKeepAliveSentStatus) {
-            if (resetKeepAliveSentStatus) {
-                mKeepAliveSent = false;
-            }
-            triggerTime = System.currentTimeMillis() + mIntervalSecond * 1000L;
-        }
-
-        public void cancel() {
-            mStop = true;
-            triggerTime = 0;
-        }
-    }
 
     public interface TcpListener{
         void onConnectionEstablished();

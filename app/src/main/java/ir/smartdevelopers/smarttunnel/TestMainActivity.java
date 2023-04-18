@@ -7,6 +7,8 @@ import android.net.VpnService;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.sshtools.client.SshClient;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -33,6 +35,7 @@ public class TestMainActivity extends AppCompatActivity {
         mBinding = ActivityTestMainBinding.inflate(getLayoutInflater());
         setContentView(mBinding.getRoot());
 
+        SshClient client ;
         mBinding.btnConnect.setOnClickListener(v -> {
 
 

@@ -4,6 +4,7 @@
     <color name="colorPrimaryDeactivated" >#591A918E</color>
     <color name="colorPrimaryVariant">#FFFFFF</color>
     <color name="colorPrimaryText">#062673</color>
+    <color name="colorPrimaryTextDeactivated" >#59062673</color>
     <color name="colorActiveText">#0740FA</color>
     <color name="colorSecondary">#1A918E</color>
     <color name="colorSecondaryVariant">#0E4E4C</color>

@@ -34,22 +34,52 @@ public class SSHConfigViewUtil {
             pasteFromClipBoardAndSaveKey();
         });
         mBinding.chbPrivateKey.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            mBinding.btnPasteKey.setEnabled(isChecked);
-            mBinding.btnChooseKey.setEnabled(isChecked);
+            mBinding.btnPasteKey.setEnabled(isChecked && !mBuilder.isPrivateKeyLocked());
+            mBinding.btnChooseKey.setEnabled(isChecked && !mBuilder.isPrivateKeyLocked());
             mBuilder.setUsePrivateKey(isChecked);
             if (!isChecked){
                 mBuilder.setPrivateKey(null);
                 mBinding.txtPrivateKeyNote.setText("");
             }
         });
-        if (mBuilder.getPrivateKey() != null){
-            setKeyNote(mBuilder.getPrivateKey());
+        if (!mBuilder.isPrivateKeyLocked()){
+            if (mBuilder.getPrivateKey() != null){
+                setKeyNote(mBuilder.getPrivateKey());
+            }
+        }else {
+            mBinding.chbPrivateKey.setEnabled(false);
+            mBinding.btnChooseKey.setEnabled(false);
+            mBinding.btnPasteKey.setEnabled(false);
         }
-        mBinding.edtServerAddress.setText(mBuilder.getServerAddress());
-        mBinding.edtServerPort.setText(mBuilder.getServerPort() == 0 ? "" :
-                String.valueOf(mBuilder.getServerPort()));
-        mBinding.edtUsername.setText(mBuilder.getUsername());
-        mBinding.edtPassword.setText(mBuilder.getPassword());
+        if (mBuilder.isServerAddressLocked()){
+            mBinding.edtServerAddressLayout.setEnabled(false);
+            mBinding.edtServerAddress.setEnabled(false);
+            mBinding.edtServerAddressLayout.setHint(mBinding.getRoot().getContext().getString(R.string.server_is_locked));
+        }else {
+            mBinding.edtServerAddress.setText(mBuilder.getServerAddress());
+        }
+        if (mBuilder.isServerPortLocked()){
+            mBinding.edtServerPortLayout.setEnabled(false);
+            mBinding.edtServerPort.setEnabled(false);
+            mBinding.edtServerPortLayout.setHint(mBinding.getRoot().getContext().getString(R.string.server_port_is_locked));
+        }else {
+            mBinding.edtServerPort.setText(mBuilder.getServerPort() == 0 ? "" :
+                    String.valueOf(mBuilder.getServerPort()));
+        }
+        if (mBuilder.isUsernameLocked()){
+            mBinding.edtUsernameLayout.setEnabled(false);
+            mBinding.edtUsername.setEnabled(false);
+            mBinding.edtUsernameLayout.setHint(mBinding.getRoot().getContext().getString(R.string.username_is_locked));
+        }else {
+            mBinding.edtUsername.setText(mBuilder.getUsername());
+        }
+        if (mBuilder.isPasswordLocked()){
+            mBinding.edtPasswordLayout.setEnabled(false);
+            mBinding.edtPassword.setEnabled(false);
+            mBinding.edtPasswordLayout.setHint(mBinding.getRoot().getContext().getString(R.string.password_is_locked));
+        }else {
+            mBinding.edtPassword.setText(mBuilder.getPassword());
+        }
         boolean usePrivateKey = mBuilder.isUsePrivateKey();
         mBinding.chbPrivateKey.setChecked(usePrivateKey);
         mBinding.chbPrivateKey.jumpDrawablesToCurrentState();
@@ -168,6 +198,6 @@ public class SSHConfigViewUtil {
         if (focusView != null && focus){
             focusView.requestFocus();
         }
-        return true;
+        return hasError;
     }
 }

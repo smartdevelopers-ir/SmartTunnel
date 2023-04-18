@@ -159,6 +159,8 @@ public class IPV4Header extends IPHeader{
         mTypeOfService = typeOfService;
     }
 
+    /** This can be calculated when packet generate its bytes , so no need to set this
+     * when creating new header*/
     public void setTotalLength(byte[] totalLength) {
         mTotalLength = totalLength;
     }

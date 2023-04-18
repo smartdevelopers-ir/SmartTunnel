@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:background="?attr/selectableItemBackground"
+    >
+<ImageView
+    android:id="@+id/imgAppIcon"
+    android:layout_width="48dp"
+    android:layout_height="48dp"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintTop_toTopOf="parent"
+    app:layout_constraintBottom_toBottomOf="parent"
+    tools:src="@tools:sample/avatars"
+    android:layout_marginStart="16dp"
+    android:layout_marginTop="8dp"
+    android:layout_marginBottom="8dp"
+    />
+    <TextView
+        android:id="@+id/txtAppName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toEndOf="@id/imgAppIcon"
+        app:layout_constraintTop_toTopOf="@id/imgAppIcon"
+        app:layout_constraintBottom_toTopOf="@id/txtAppPackageName"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        app:layout_constraintEnd_toStartOf="@id/chbCheckbox"
+        android:textStyle="bold"
+        tools:text="App Name"
+        android:textColor="@color/color_primary_text"
+        />
+    <TextView
+        android:id="@+id/txtAppPackageName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="@id/txtAppName"
+        app:layout_constraintBottom_toBottomOf="@id/imgAppIcon"
+        app:layout_constraintEnd_toStartOf="@id/chbCheckbox"
+        app:layout_constraintTop_toBottomOf="@id/txtAppName"
+        android:layout_marginEnd="16dp"
+        android:textSize="13sp"
+        tools:text="com.androif.google"
+        android:textColor="@color/color_primary_text"
+        android:alpha="0.75"
+        android:ellipsize="middle"
+        android:singleLine="true" />
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/chbCheckbox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/txtAppName"
+        app:layout_constraintBottom_toBottomOf="@id/txtAppPackageName"
+        android:layout_marginEnd="8dp"
+        android:clickable="false"
+        android:focusable="false"
+        />
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -28,19 +28,25 @@ import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.Session;
+import com.google.gson.Gson;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
+import ir.smartdevelopers.smarttunnel.packet.IPV4Header;
 import ir.smartdevelopers.smarttunnel.packet.Packet;
 import ir.smartdevelopers.smarttunnel.ui.activities.MainActivity;
 import ir.smartdevelopers.smarttunnel.ui.exceptions.ConfigException;
 import ir.smartdevelopers.smarttunnel.ui.models.Config;
+import ir.smartdevelopers.smarttunnel.ui.models.HttpProxy;
+import ir.smartdevelopers.smarttunnel.ui.models.Proxy;
+import ir.smartdevelopers.smarttunnel.ui.models.ProxyType;
 import ir.smartdevelopers.smarttunnel.ui.models.SSHConfig;
+import ir.smartdevelopers.smarttunnel.ui.models.SSHProxy;
 import ir.smartdevelopers.smarttunnel.ui.utils.ConfigsUtil;
 import ir.smartdevelopers.smarttunnel.ui.utils.PrefsUtil;
 import ir.smartdevelopers.smarttunnel.utils.ByteUtil;
@@ -200,6 +206,10 @@ public class MyVpnService extends VpnService {
         sendStatusChangedSignal();
         try {
             mCurrentConfig = ConfigsUtil.loadConfig(getApplicationContext(),configId,configType);
+            Proxy globalProxy = loadProxy();
+            if (globalProxy != null){
+                mCurrentConfig.setProxy(globalProxy);
+            }
         }catch (IOException e){
             Logger.logError(getString(R.string.can_not_read_config));
             disconnect();
@@ -221,12 +231,7 @@ public class MyVpnService extends VpnService {
         }
         protect(mCurrentConfig.getMainSocket());
         try {
-//            JSch jSch = new JSch();
-//            jSch.setHostKeyRepository(new HostKeyRepo(getApplicationContext()));
-//            Session session = jSch.getSession(((SSHConfig)mCurrentConfig).getUsername()
-//                    ,((SSHConfig)mCurrentConfig).getServerAddress(),((SSHConfig)mCurrentConfig).getServerPort());
-//            session.setPassword(((SSHConfig)mCurrentConfig).getPassword());
-//            session.connect(15000);
+
             VpnService.Builder builder=new VpnService.Builder();
             builder.setSession("SmartTunnel").setMtu(PRIVATE_MTU);
             builder.addAddress(PRIVATE_VLAN4_CLIENT, 24);
@@ -234,26 +239,32 @@ public class MyVpnService extends VpnService {
 
             PackageManager packageManager = getPackageManager();
             // allow selected apps to use vpn
-//            if (PrefsUtil.isAllowSelectedAppsEnabled(getApplicationContext())){
-//                Set<String> allowedApps = PrefsUtil.getAllowedApps(getApplicationContext());
-//                for (String app : allowedApps){
-//                    try {
-//                        packageManager.getPackageInfo(app,0);
-//                        builder.addAllowedApplication(app);
-//                    } catch (PackageManager.NameNotFoundException ignore) {}
-//                }
-//
-//            }else {
-//                Set<String> disallowedApps = PrefsUtil.getDisallowedApps(getApplicationContext());
-//                for (String app : disallowedApps){
-//                    try {
-//                        packageManager.getPackageInfo(app,0);
-//                        builder.addDisallowedApplication(app);
-//                    } catch (PackageManager.NameNotFoundException ignore) {}
-//                }
-//            }
-            builder.addAllowedApplication("ir.smartdevelopers.tcptest");
-            builder.addAllowedApplication("com.android.chrome");
+            Set<String> selectedApps = PrefsUtil.getSelectedApps(getApplicationContext());
+            Set<String> forbiddenApps = PrefsUtil.getForbiddenApps(getApplicationContext());
+
+            if (PrefsUtil.isAllowSelectedAppsEnabled(getApplicationContext())){
+                for (String app : selectedApps){
+                    if (forbiddenApps.contains(app)){
+                        continue;
+                    }
+                    try {
+                        packageManager.getPackageInfo(app,0);
+                        builder.addAllowedApplication(app);
+                    } catch (PackageManager.NameNotFoundException ignore) {}
+                }
+
+            }else {
+                Set<String> allDisallowedApps = new HashSet<>(selectedApps);
+                allDisallowedApps.addAll(forbiddenApps);
+                for (String app : allDisallowedApps){
+                    try {
+                        packageManager.getPackageInfo(app,0);
+                        builder.addDisallowedApplication(app);
+                    } catch (PackageManager.NameNotFoundException ignore) {}
+                }
+            }
+//            builder.addAllowedApplication("ir.smartdevelopers.tcptest");
+//            builder.addAllowedApplication("com.android.chrome");
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 Network activeNetwork = connectivityManager.getActiveNetwork();
                 if (activeNetwork != null) {
@@ -268,9 +279,9 @@ public class MyVpnService extends VpnService {
             if (!TextUtils.isEmpty(DNS2)){
                 builder.addDnsServer(DNS2);
             }
-            builder.addDnsServer("8.8.8.8");
+//            builder.addDnsServer("8.8.8.8");
             builder.addRoute("0.0.0.0", 0);
-//            builder.addRoute("::", 0);
+            builder.addRoute("::", 0);
             builder.setConfigureIntent(getMainIntent());
             vpnInterface = builder.establish();
 
@@ -291,6 +302,26 @@ public class MyVpnService extends VpnService {
             throw new RuntimeException(e);
         }
 
+    }
+
+    private Proxy loadProxy() {
+        int proxyType = PrefsUtil.getGlobalProxyType(getApplicationContext());
+        if (proxyType == ProxyType.TYPE_NONE){
+            return null;
+        }
+        if (proxyType == ProxyType.TYPE_HTTP){
+            String proxyJson = PrefsUtil.loadGlobalProxy(getApplicationContext());
+            if (!TextUtils.isEmpty(proxyJson)){
+                return new Gson().fromJson(proxyJson,HttpProxy.class);
+            }
+        }
+        if (proxyType == ProxyType.TYPE_SSH){
+            String proxyJson = PrefsUtil.loadGlobalProxy(getApplicationContext());
+            if (!TextUtils.isEmpty(proxyJson)){
+                return new Gson().fromJson(proxyJson,SSHProxy.class);
+            }
+        }
+        return null;
     }
 
     private void sendStatusChangedSignal() {
@@ -357,7 +388,7 @@ public class MyVpnService extends VpnService {
         private final FileInputStream mLocalInput;
         private final Config mConfig;
         private final MyVpnService mMyVpnService;
-        final long IDLE_TIME = 100;
+        final long IDLE_TIME = 50;
         final byte[] packet = new byte[Packet.MAX_SIZE];
         private LocalReader(FileInputStream localInput, Config config,MyVpnService service) {
             mLocalInput = localInput;
@@ -394,6 +425,10 @@ public class MyVpnService extends VpnService {
 
     }
 
+    public static String getRemoteAddr(byte[] data){
+        IPV4Header header = IPV4Header.fromHeaderByte(data);
+        return header.getDestAddressName();
+    }
 
 
     private void updateNotificationInfo(String text,int icon) {

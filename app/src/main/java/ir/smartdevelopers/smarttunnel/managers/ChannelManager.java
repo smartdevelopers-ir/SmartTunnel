@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import ir.smartdevelopers.smarttunnel.channels.Channel;
 import ir.smartdevelopers.smarttunnel.channels.ChannelV4TCP;
 import ir.smartdevelopers.smarttunnel.channels.DNSChannel;
+import ir.smartdevelopers.smarttunnel.channels.UDPChannel;
 import ir.smartdevelopers.smarttunnel.packet.IPV4Header;
 import ir.smartdevelopers.smarttunnel.packet.Packet;
 import ir.smartdevelopers.smarttunnel.packet.PacketV4;
@@ -21,20 +22,31 @@ public class ChannelManager {
     private final PacketManager mPacketManager;
     private final ConcurrentHashMap<String,Channel> mChannels;
     private final ConcurrentHashMap<String,Thread> mThreads;
+    private int udpgwPort;
 
-    public ChannelManager(Session session, PacketManager packetManager) {
+    public ChannelManager(Session session, PacketManager packetManager,int udpgwPort) {
         mSession = session;
         mPacketManager = packetManager;
         mChannels = new ConcurrentHashMap<>();
         mThreads = new ConcurrentHashMap<>();
+        this.udpgwPort = udpgwPort;
     }
 
     public  void sendToRemoteServer(Packet packet) {
 
-        String channelId = String.format(Locale.US,"%s_%d_to_%s_%d_%d",
-                IPV4Header.getIPAddress(packet.getSourceAddress()),ByteUtil.getIntValue(packet.getSourcePort()),
-                IPV4Header.getIPAddress(packet.getDestAddress()),ByteUtil.getIntValue(packet.getDestPort())
-                ,packet.getProtocolNumber());
+        String channelId ;
+        if (packet.getTransmissionProtocol() instanceof UDP && ByteUtil.getIntValue(packet.getDestPort()) != 53){
+            channelId = "udp_channel";
+            if (udpgwPort == 0){
+                // no udpgw port was set so don't start udp channel
+                return;
+            }
+        }else {
+           channelId =  String.format(Locale.US,"%s_%d_to_%s_%d_%d",
+                    IPV4Header.getIPAddress(packet.getSourceAddress()),ByteUtil.getIntValue(packet.getSourcePort()),
+                    IPV4Header.getIPAddress(packet.getDestAddress()),ByteUtil.getIntValue(packet.getDestPort())
+                    ,packet.getProtocolNumber());
+        }
         if (mChannels.get(channelId) != null){
             Objects.requireNonNull(mChannels.get(channelId)).onNewPacket(packet);
         }else {
@@ -49,6 +61,8 @@ public class ChannelManager {
                     channel = new ChannelV4TCP(channelId, pk,mSession,this);
                 }else if (pk.getTransmissionProtocol() instanceof UDP && ByteUtil.getIntValue(pk.getDestPort()) == 53){
                     channel = new DNSChannel(channelId,pk,mSession,this);
+                } else if (pk.getTransmissionProtocol() instanceof UDP) {
+                    channel = new UDPChannel(channelId,packet,mSession,this,udpgwPort);
                 }
                 if (channel == null ){
                     return;

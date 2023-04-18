@@ -35,9 +35,9 @@ public class PacketManager {
     private ServerPacketListener mServerPacketListener;
 
 
-    public PacketManager(Session session, ServerPacketListener serverPacketListener)  {
+    public PacketManager(Session session, ServerPacketListener serverPacketListener,int udpgwPort)  {
         mPacketsQueue = new ConcurrentLinkedQueue<>();
-        mChannelManager = new ChannelManager(session, this);
+        mChannelManager = new ChannelManager(session, this,udpgwPort);
         mServerPacketListener = serverPacketListener;
         mLocalPacketWriter = new LocalPacketWriter(mPacketsQueue,mServerPacketListener, this);
         mWriterThread = new Thread(mLocalPacketWriter,"packetManagerLocalWriter");
@@ -100,7 +100,7 @@ public class PacketManager {
             return;
         }
         if (packet instanceof PacketV4){
-            if (!((PacketV4) packet).getIPHeader().getDestAddressName().equals("151.245.0.212")){
+            if (!((PacketV4) packet).getIPHeader().getDestAddressName().equals("151.241.94.91")){
                 return;
             }
         }

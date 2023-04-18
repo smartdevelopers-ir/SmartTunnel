@@ -41,6 +41,17 @@ public class AdvancedSSHConfigFragment extends Fragment {
     }
 
     private void initViews() {
+        if (mViewModel.getSSHConfigBuilder().isConnectionModeLocked()){
+            mBinding.sshConnectionTypeGroup.setEnabled(false);
+            if (mViewModel.getJumperConfigBuilder() != null){
+                mViewModel.getJumperConfigBuilder()
+                        .setServerAddressLocked(true)
+                        .setServerPortLocked(true)
+                        .setUsernameLocked(true)
+                        .setPasswordLocked(true)
+                        .setPrivateKeyLocked(true);
+            }
+        }
         mBinding.edtUDPGWPort.addTextChangedListener(new SimpleTextWatcher( mBinding.edtUDPGWPort, mBinding.edtUDPGWPortLayout) {
             @Override
             public void onTextChanged(CharSequence text) {
@@ -70,17 +81,18 @@ public class AdvancedSSHConfigFragment extends Fragment {
         if (mViewModel.getSSHConfigBuilder().getConnectionType() == SSHConfig.CONNECTION_TYPE_DIRECT){
             setDirect();
         } else if (mViewModel.getSSHConfigBuilder().getConnectionType() == SSHConfig.CONNECTION_TYPE_SSH_PROXY) {
-            mBinding.sshConnectionTypeGroup.check(mBinding.radSshProxy.getId());
+            mBinding.sshConnectionTypeGroup.check(mBinding.radSshProxy.getId(),true);
         } else if (mViewModel.getSSHConfigBuilder().getConnectionType() == SSHConfig.CONNECTION_TYPE_WEBSOCKET) {
-            mBinding.sshConnectionTypeGroup.check(mBinding.radWebsocket.getId());
+            mBinding.sshConnectionTypeGroup.check(mBinding.radWebsocket.getId(),true);
         } else if (mViewModel.getSSHConfigBuilder().getConnectionType() == SSHConfig.CONNECTION_TYPE_WEBSOCKET) {
-            mBinding.sshConnectionTypeGroup.check(mBinding.radWebsocket.getId());
+            mBinding.sshConnectionTypeGroup.check(mBinding.radWebsocket.getId(),true);
         }
         if (getArguments() != null){
             if (getArguments().getBoolean(KEY_SHOW_ERROR)){
                 showErrors();
             }
         }
+
     }
 
     private void setSSHProxy() {

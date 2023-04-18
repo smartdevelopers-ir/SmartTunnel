@@ -46,7 +46,7 @@ public class RadioGridGroups extends GridLayout {
             }
             btn.setOnClickListener(v->{
                 if (btn.isChecked()){
-                    check(v.getId());
+                    check(v.getId(),false);
                 }
             });
         }
@@ -60,7 +60,7 @@ public class RadioGridGroups extends GridLayout {
             btn.setChecked(checked);
         }
     }
-    public void check(int id){
+    public void check(int id,boolean jumpDrawableToCurrentState){
         boolean changed = mCheckedId != id;
         if (!changed){
             return;
@@ -69,12 +69,18 @@ public class RadioGridGroups extends GridLayout {
             View view = findViewById(mCheckedId);
             if (view instanceof RadioButton){
                 ((RadioButton) view).setChecked(false);
+                if (jumpDrawableToCurrentState){
+                    view.jumpDrawablesToCurrentState();
+                }
             }
         }
         if (id !=-1){
             View view = findViewById(id);
             if (view instanceof RadioButton){
                 ((RadioButton) view).setChecked(true);
+                if (jumpDrawableToCurrentState){
+                    view.jumpDrawablesToCurrentState();
+                }
             }
         }
        mCheckedId = id;

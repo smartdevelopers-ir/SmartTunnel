@@ -15,6 +15,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import ir.smartdevelopers.smarttunnel.ui.models.ConfigListModel;
+import ir.smartdevelopers.smarttunnel.ui.models.ProxyType;
 
 public class PrefsUtil {
     public static final String APP_PREFS_NAME = "smart_prefs";
@@ -32,9 +33,23 @@ public class PrefsUtil {
     };
     public static void addConfig(Context context,ConfigListModel model){
         SharedPreferences prefs = getGeneralPrefs(context);
-        Set<String> configsList = new HashSet<>(prefs.getStringSet(ConfigListModel.PREFS_NAME, Collections.emptySet()));
-        configsList.add(new Gson().toJson(model));
-        prefs.edit().putStringSet(ConfigListModel.PREFS_NAME,configsList).apply();
+        List<String> configsList = new ArrayList<>(prefs.getStringSet(ConfigListModel.PREFS_NAME, Collections.emptySet()));
+        Gson gson = new Gson();
+        String newModelJson = gson.toJson(model);
+        boolean update = false;
+        for (int i = 0;i<configsList.size();i++){
+            String configJson = configsList.get(i);
+            ConfigListModel conf = gson.fromJson(configJson,ConfigListModel.class);
+            if (Objects.equals(conf.configId,model.configId)){
+                configsList.set(i,newModelJson);
+                update = true;
+            }
+
+        }
+        if (!update) {
+            configsList.add(newModelJson);
+        }
+        prefs.edit().putStringSet(ConfigListModel.PREFS_NAME,new HashSet<>(configsList)).apply();
     }
     public static void deleteConfig(Context context,ConfigListModel model){
         SharedPreferences prefs = getGeneralPrefs(context);
@@ -87,25 +102,14 @@ public class PrefsUtil {
         }
         return new Gson().fromJson(selectedConfigJson,ConfigListModel.class);
     }
-    public static Set<String> getAllowedApps(Context context){
-        HashSet<String> allowedApps = new HashSet<>(getGeneralPrefs(context).getStringSet("allowed_apps",Collections.emptySet()));
-        Set<String> forbiddenApps = getForbiddenApps(context);
-        for (String forbiddenApp : forbiddenApps){
-            allowedApps.remove(forbiddenApp);
-        }
-        return allowedApps;
+    public static Set<String> getSelectedApps(Context context){
+        HashSet<String> apps = new HashSet<>(getGeneralPrefs(context).getStringSet("selected_apps",Collections.emptySet()));
+        return apps;
     }
-    public static void setAllowedApps(Context context,Set<String> allowedApps){
-        getGeneralPrefs(context).edit().putStringSet("allowed_apps",allowedApps).apply();
+    public static void setSelectedApps(Context context,Set<String> apps){
+        getGeneralPrefs(context).edit().putStringSet("selected_apps",apps).apply();
     }
-    public static Set<String> getDisallowedApps(Context context){
-        HashSet<String> disallowedApps = new HashSet<>(getGeneralPrefs(context).getStringSet("disallowed_apps",Collections.emptySet()));
-        disallowedApps.addAll(getForbiddenApps(context));
-        return disallowedApps;
-    }
-    public static void setDisallowedApps(Context context,Set<String> disallowedApps){
-        getGeneralPrefs(context).edit().putStringSet("disallowed_apps",disallowedApps).apply();
-    }
+
     public static Set<String> getForbiddenApps(Context context){
         Set<String> forbiddenApps = new HashSet<>(getGeneralPrefs(context).getStringSet("forbidden_apps",Collections.emptySet()));
         forbiddenApps.addAll(Arrays.asList(DEFAULT_FORBIDDEN_APPS));
@@ -116,6 +120,15 @@ public class PrefsUtil {
     }
     public static boolean isAllowSelectedAppsEnabled(Context context){
         return getGeneralPrefs(context).getBoolean("allow_selected_apps",false);
+    }
+    public static void setAllowSelectedApps(Context context,boolean enable){
+        getGeneralPrefs(context).edit().putBoolean("allow_selected_apps",enable).apply();
+    }
+    public static void setDNSName(Context context,String name){
+        getGeneralPrefs(context).edit().putString("DNS_name",name).apply();
+    }
+    public static String getDNSName(Context context){
+        return getGeneralPrefs(context).getString("DNS_name","Google");
     }
     public static String getDNS1(Context context){
         return getGeneralPrefs(context).getString("DNS1","");
@@ -128,5 +141,23 @@ public class PrefsUtil {
     }
     public static void setDNS2(Context context,String dns2){
         getGeneralPrefs(context).edit().putString("DNS2",dns2).apply();
+    }
+    public static void setGlobalProxyType(Context context,int type){
+        getGeneralPrefs(context).edit().putInt("global_proxy_type",type).apply();
+    }
+    public static int getGlobalProxyType(Context context){
+        return getGeneralPrefs(context).getInt("global_proxy_type", ProxyType.TYPE_NONE);
+    }
+    public static void saveGlobalProxy(Context context,String proxyJson){
+        getGeneralPrefs(context).edit().putString("global_proxy",proxyJson).apply();
+    }
+    public static String loadGlobalProxy(Context context){
+        return getGeneralPrefs(context).getString("global_proxy",null);
+    }
+    public static void saveConfigFilesDirectoryPath(Context context,String uri){
+        getGeneralPrefs(context).edit().putString("config_directory_path",uri).apply();
+    }
+    public static String getConfigFilesDirectoryPath(Context context){
+        return getGeneralPrefs(context).getString("config_directory_path",null);
     }
 }
