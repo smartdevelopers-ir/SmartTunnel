@@ -144,6 +144,12 @@ public class SshToolRemoteConnection extends RemoteConnection{
 //        return mSocketConnection.getSocketChannel().socket();
     }
 
+    @Override
+    public boolean isPortInUse(int port) {
+        return mSshClient.getContext().getForwardingManager().isListening(port);
+
+    }
+
     public void setPrivateKey(PrivateKey privateKey) {
         this.privateKey = privateKey;
     }

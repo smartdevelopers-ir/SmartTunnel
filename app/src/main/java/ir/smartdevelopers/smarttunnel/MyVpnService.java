@@ -8,7 +8,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
-import android.net.IpPrefix;
 import android.net.Network;
 import android.net.VpnService;
 import android.os.Binder;
@@ -34,7 +33,6 @@ import com.google.gson.Gson;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -48,9 +46,8 @@ import ir.smartdevelopers.smarttunnel.ui.models.Config;
 import ir.smartdevelopers.smarttunnel.ui.models.HttpProxy;
 import ir.smartdevelopers.smarttunnel.ui.models.Proxy;
 import ir.smartdevelopers.smarttunnel.ui.models.ProxyType;
-import ir.smartdevelopers.smarttunnel.ui.models.SSHConfig;
 import ir.smartdevelopers.smarttunnel.ui.models.SSHProxy;
-import ir.smartdevelopers.smarttunnel.ui.utils.ConfigsUtil;
+import ir.smartdevelopers.smarttunnel.ui.models.Tun2SocksConfig;
 import ir.smartdevelopers.smarttunnel.ui.utils.PrefsUtil;
 import ir.smartdevelopers.smarttunnel.utils.ByteUtil;
 import ir.smartdevelopers.smarttunnel.utils.Logger;
@@ -208,12 +205,16 @@ public class MyVpnService extends VpnService {
         mStatus = Status.CONNECTING;
         sendStatusChangedSignal();
         try {
-            mCurrentConfig = ConfigsUtil.loadConfig(getApplicationContext(),configId,configType);
+//            mCurrentConfig = ConfigsUtil.loadConfig(getApplicationContext(),configId,configType);
+            Tun2SocksConfig config = new Tun2SocksConfig("squid_conf","sqid_id",
+                    new HttpProxy("127.0.0.1",1080),"s3.goolha.tk",2232,
+                    "mostafa","mosi.1371",false,null,7600);
+            mCurrentConfig = config;
             Proxy globalProxy = loadProxy();
             if (globalProxy != null){
                 mCurrentConfig.setProxy(globalProxy);
             }
-        }catch (IOException e){
+        }catch (Exception e){
             Logger.logError(getString(R.string.can_not_read_config));
             disconnect();
         }

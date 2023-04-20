@@ -126,9 +126,11 @@ public class TCPController {
         }
         byte[] data=null;
         TCPFlag flag = TCPFlag.FIN_ACK();
-        if (mClientPackets.size()>0){
-            data=mClientPackets.getLast().getPacket().getData();
-            flag.PSH = 1;
+        synchronized (mClientPackets){
+            if (mClientPackets.size()>0){
+                data=mClientPackets.getLast().getPacket().getData();
+                flag.PSH = 1;
+            }
         }
         Packet packet = makeTcpPacket(data, flag,null);
         mKeepAliveThread.resetTimer();
@@ -151,9 +153,11 @@ public class TCPController {
 
         byte[] data=null;
         TCPFlag flag = TCPFlag.RST_ACK();
-        if (mClientPackets.size()>0){
-            data=mClientPackets.getLast().getPacket().getData();
-            flag.PSH = 1;
+        synchronized (mClientPackets){
+            if (mClientPackets.size()>0){
+                data=mClientPackets.getLast().getPacket().getData();
+                flag.PSH = 1;
+            }
         }
         Packet closePacket = makeTcpPacket(data, flag,null);
         mKeepAliveThread.resetTimer();
@@ -198,7 +202,9 @@ public class TCPController {
             packetWrapper.setSequenceNumber(mRemoteSeqNumber);
             packetWrapper.setNextSequenceNumber(nextSeqNumber);
             packetWrapper.setAcknowledgeNumber(mClientNexSeqNumber);
-            mClientPackets.add(packetWrapper);
+            synchronized (mClientPackets){
+                mClientPackets.add(packetWrapper);
+            }
         }
         mRemoteSeqNumber = nextSeqNumber;
         mTcpListener.onPacketReadyForClient(packet);

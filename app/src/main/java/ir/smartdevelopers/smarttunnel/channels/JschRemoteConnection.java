@@ -130,6 +130,21 @@ public class JschRemoteConnection extends RemoteConnection {
         return mSession.getSocket();
     }
 
+    @Override
+    public boolean isPortInUse(int port) {
+        try {
+            String[] forwarding = mSession.getPortForwardingL();
+            for (String s : forwarding){
+                String[] splits = s.split(":");
+                int lPort = Integer.parseInt(splits[0]);
+                return lPort == port;
+            }
+        } catch (Exception e) {
+            return false;
+        }
+        return false;
+    }
+
     public void setPrivateKey(PrivateKey privateKey) {
         this.privateKey = privateKey;
     }

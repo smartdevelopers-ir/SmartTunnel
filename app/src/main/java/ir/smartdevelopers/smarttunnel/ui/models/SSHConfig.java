@@ -3,31 +3,19 @@ package ir.smartdevelopers.smarttunnel.ui.models;
 import android.text.TextUtils;
 
 import com.jcraft.jsch.HostKeyRepository;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.KeyPair;
-import com.jcraft.jsch.ProxyHTTP;
-import com.jcraft.jsch.Session;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.Socket;
-import java.util.Arrays;
 import java.util.UUID;
 
-import ir.smartdevelopers.smarttunnel.HostKeyRepo;
 import ir.smartdevelopers.smarttunnel.channels.JschRemoteConnection;
 import ir.smartdevelopers.smarttunnel.channels.RemoteConnection;
-import ir.smartdevelopers.smarttunnel.channels.SshjRemoteConnection;
 import ir.smartdevelopers.smarttunnel.exceptions.RemoteConnectionException;
+import ir.smartdevelopers.smarttunnel.managers.ChannelManager;
 import ir.smartdevelopers.smarttunnel.managers.PacketManager;
+import ir.smartdevelopers.smarttunnel.managers.SshChannelManager;
 import ir.smartdevelopers.smarttunnel.packet.Packet;
 import ir.smartdevelopers.smarttunnel.ui.classes.AcceptAllHostRepo;
 import ir.smartdevelopers.smarttunnel.ui.exceptions.ConfigException;
-import ir.smartdevelopers.smarttunnel.utils.ByteUtil;
-import ir.smartdevelopers.smarttunnel.utils.Logger;
 
 public class SSHConfig extends Config {
     /**
@@ -142,7 +130,8 @@ public class SSHConfig extends Config {
                 return;
             }
             ServerPacketListener serverPacketListener = new ServerPacketListener(this);
-            mPacketManager = new PacketManager(mRemoteConnection, serverPacketListener,mUDPGWPort);
+            ChannelManager channelManager = new SshChannelManager(mRemoteConnection,mUDPGWPort);
+            mPacketManager = new PacketManager(serverPacketListener,channelManager);
 
 
 

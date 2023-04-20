@@ -1,8 +1,5 @@
 package ir.smartdevelopers.smarttunnel.channels;
 
-import com.jcraft.jsch.ChannelDirectTCPIP;
-import com.jcraft.jsch.Session;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -12,6 +9,7 @@ import java.util.concurrent.Semaphore;
 
 import ir.smartdevelopers.smarttunnel.exceptions.RemoteConnectionException;
 import ir.smartdevelopers.smarttunnel.managers.ChannelManager;
+import ir.smartdevelopers.smarttunnel.managers.SshChannelManager;
 import ir.smartdevelopers.smarttunnel.packet.IPV4Header;
 import ir.smartdevelopers.smarttunnel.packet.Packet;
 import ir.smartdevelopers.smarttunnel.packet.PacketV4;

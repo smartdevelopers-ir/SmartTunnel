@@ -1,15 +1,8 @@
 package ir.smartdevelopers.smarttunnel.managers;
 
-import com.jcraft.jsch.Session;
-
-import java.io.IOException;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
-import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
-import ir.smartdevelopers.smarttunnel.channels.RemoteConnection;
 import ir.smartdevelopers.smarttunnel.packet.IPV4Header;
 import ir.smartdevelopers.smarttunnel.packet.Packet;
 import ir.smartdevelopers.smarttunnel.packet.PacketV4;
@@ -36,9 +29,10 @@ public class PacketManager {
     private ServerPacketListener mServerPacketListener;
 
 
-    public PacketManager(RemoteConnection connection, ServerPacketListener serverPacketListener, int udpgwPort)  {
+    public PacketManager(ServerPacketListener serverPacketListener, ChannelManager channelManager)  {
         mPacketsQueue = new ConcurrentLinkedQueue<>();
-        mChannelManager = new ChannelManager(connection, this,udpgwPort);
+        mChannelManager = channelManager;
+        mChannelManager.setPacketManager(this);
         mServerPacketListener = serverPacketListener;
         mLocalPacketWriter = new LocalPacketWriter(mPacketsQueue,mServerPacketListener, this);
         mWriterThread = new Thread(mLocalPacketWriter,"packetManagerLocalWriter");
@@ -100,11 +94,11 @@ public class PacketManager {
         if (packet ==null ){
             return;
         }
-        if (packet instanceof PacketV4){
-            if (!((PacketV4) packet).getIPHeader().getDestAddressName().equals("151.245.16.92")){
-                return;
-            }
-        }
+//        if (packet instanceof PacketV4){
+//            if (!((PacketV4) packet).getIPHeader().getDestAddressName().equals("151.245.16.92")){
+//                return;
+//            }
+//        }
 //       if (packet.getProtocolNumber() != UDP.PROTOCOL_NUMBER){
 //           continue;
 //       }

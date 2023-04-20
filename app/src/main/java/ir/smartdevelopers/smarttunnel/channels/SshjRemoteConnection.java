@@ -159,6 +159,21 @@ public class SshjRemoteConnection extends RemoteConnection{
         return mSSHClient.getSocket();
     }
 
+    @Override
+    public boolean isPortInUse(int port) {
+        for (String s: mPortForwarderMap.keySet()){
+            String[] splits = s.split(":");
+            int lPort;
+           try {
+               lPort = Integer.parseInt(splits[1]);
+           }catch (Exception e){
+               return false;
+           }
+            return lPort == port;
+        }
+        return false;
+    }
+
     public void setPrivateKey(PrivateKey privateKey) {
         this.privateKey = privateKey;
     }

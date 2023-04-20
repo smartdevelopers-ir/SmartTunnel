@@ -19,6 +19,7 @@ public abstract class RemoteConnection {
     public abstract void disconnect();
     public abstract boolean isConnected();
     public abstract Socket getMainSocket();
+    public abstract boolean isPortInUse(int port);
     public abstract static class DirectTCPChannel{
         private InputStream mRemoteIn;
         private OutputStream mRemoteOut;

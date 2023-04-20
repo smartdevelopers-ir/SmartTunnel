@@ -1,18 +1,8 @@
 package ir.smartdevelopers.smarttunnel.channels;
 
-import com.jcraft.jsch.ChannelDirectTCPIP;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
-import com.sshtools.client.SshClient;
-
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.Random;
@@ -28,31 +18,27 @@ import ir.smartdevelopers.smarttunnel.packet.TransmissionProtocol;
 import ir.smartdevelopers.smarttunnel.utils.ByteUtil;
 import ir.smartdevelopers.smarttunnel.utils.Logger;
 
-public class ChannelV4TCP extends Channel implements TCPController.TcpListener {
+public abstract class ChannelV4TCP extends Channel implements TCPController.TcpListener {
 
-    private RemoteConnection mRemoteConnection;
-    private RemoteConnection.DirectTCPChannel mChannel;
+    protected RemoteConnection mRemoteConnection;
     /**
      * We read every thing remote sends to us from this inputStream.
      */
 
-    private InputStream mRemoteIn;
+    protected InputStream mRemoteIn;
     /**
      * every thing remote sends to us is written to this output stream
      */
-//    private PipedOutputStream remoteSelfOutStream;
-    private OutputStream mRemoteOut;
-    private int mMaxSegmentSize;
-    private Thread mRemoteReaderThread;
-    private final ChannelManager mChannelManager;
+    protected OutputStream mRemoteOut;
+
+    protected Thread mRemoteReaderThread;
+    protected final ChannelManager mChannelManager;
     /**
      * This is first packet we received from sender or local client
      */
-    private PacketV4 mInitialPacket;
+    protected PacketV4 mInitialPacket;
 
-    private TCPController mTCPController;
-
-    private int mLocalPort;
+    protected TCPController mTCPController;
     /** This is IP header identification, we must increase by 1 for every packet sent to client */
     private short mIpIdentification;
 
@@ -65,13 +51,6 @@ public class ChannelV4TCP extends Channel implements TCPController.TcpListener {
         mChannelManager = channelManager;
         mInitialPacket = packetV4;
         mTCPController = new TCPController(packetV4, new TcpPacketCreator(), id, this);
-        if (((TCP) packetV4.getTransmissionProtocol()).getTCPOption() != null) {
-            if (((TCP) packetV4.getTransmissionProtocol()).getTCPOption().getMaximumSegmentSize() == 0) {
-                mMaxSegmentSize = 2048;
-            } else {
-                mMaxSegmentSize = ((TCP) packetV4.getTransmissionProtocol()).getTCPOption().getMaximumSegmentSize();
-            }
-        }
         mIpIdentification = (short) new Random().nextInt(Short.MAX_VALUE);
 
 
@@ -119,17 +98,8 @@ public class ChannelV4TCP extends Channel implements TCPController.TcpListener {
 
     @Override
     public void run() {
-//        if (mSession == null || !mSession.isConnected()) {
-//            return;
-//        }
         try {
-            mChannel = mRemoteConnection.startDirectTCPChannel("127.0.0.1",0,
-                    mInitialPacket.getIPHeader().getDestAddressName(),
-                    mInitialPacket.getTransmissionProtocol().getDestPortIntValue());
-
-
-            mRemoteOut = mChannel.getRemoteOut();
-            mRemoteIn = mChannel.getRemoteIn();
+            connect();
 
             mTCPController.onChannelConnected();
 
@@ -139,7 +109,7 @@ public class ChannelV4TCP extends Channel implements TCPController.TcpListener {
 
                 TCPPacketWrapper pkw = mTCPController.getRemotePacketQueue().poll();
 
-                if (mChannel.isConnected()) {
+                if (isConnected()) {
 
                     if (pkw.getPacket().getData() != null && pkw.getPacket().getData().length > 0) {
                         try {
@@ -175,14 +145,6 @@ public class ChannelV4TCP extends Channel implements TCPController.TcpListener {
      */
     @Override
     public void close() {
-        if (mChannel != null) {
-            try {
-                mChannel.stop();
-            } catch (RemoteConnectionException ignore) {
-
-            }
-        }
-
         mChannelManager.removeChannel(this);
         if (mRemoteReaderThread != null) {
             mRemoteReaderThread.interrupt();
@@ -191,6 +153,8 @@ public class ChannelV4TCP extends Channel implements TCPController.TcpListener {
 
     }
 
+    public abstract boolean isConnected();
+    public abstract void connect() throws RemoteConnectionException;
 
 
 
@@ -205,14 +169,14 @@ public class ChannelV4TCP extends Channel implements TCPController.TcpListener {
         @Override
         public void run() {
 
-            if (mChannel != null && mChannel.isConnected()) {
+            if (isConnected()) {
                 try {
                     byte[] buffer = new byte[mTCPController.getMaxSegmentSize()];
 //                    byte[] buffer = new byte[1024*4];
                     int len;
                     boolean psh = false;
                     while (true) {
-                        if (mChannel.isConnected()) {
+                        if (isConnected()) {
                             mTCPController.waitIfWindowIsFull();
                             len = mRemoteIn.read(buffer);
                             if (len > 0) {
@@ -223,7 +187,7 @@ public class ChannelV4TCP extends Channel implements TCPController.TcpListener {
                                 }
                                 byte[] data = Arrays.copyOfRange(buffer, 0, len);
                                 mTCPController.packetFromRemote(data, psh);
-                                if (mRemoteIn.available() <= 0 && !mChannel.isConnected()) {
+                                if (mRemoteIn.available() <= 0 && !isConnected()) {
                                     mTCPController.close();
                                     // wait to close from tcp controller
                                 }

@@ -61,7 +61,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textSize="14sp"
-            android:inputType="numberDecimal"
+            android:inputType="number"
             android:paddingTop="12dp"
             />
     </com.google.android.material.textfield.TextInputLayout>

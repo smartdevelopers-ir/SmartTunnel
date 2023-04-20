@@ -1,12 +1,6 @@
 package ir.smartdevelopers.smarttunnel.channels;
 
-import android.util.SparseArray;
-import android.util.SparseIntArray;
-
 import androidx.annotation.Nullable;
-
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -23,6 +17,7 @@ import java.util.concurrent.Semaphore;
 
 import ir.smartdevelopers.smarttunnel.exceptions.RemoteConnectionException;
 import ir.smartdevelopers.smarttunnel.managers.ChannelManager;
+import ir.smartdevelopers.smarttunnel.managers.SshChannelManager;
 import ir.smartdevelopers.smarttunnel.packet.IPV4Header;
 import ir.smartdevelopers.smarttunnel.packet.Packet;
 import ir.smartdevelopers.smarttunnel.packet.PacketV4;
