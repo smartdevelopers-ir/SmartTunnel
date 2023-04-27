@@ -18,11 +18,13 @@ import ir.smartdevelopers.smarttunnel.ui.classes.SimpleTextWatcher;
 import ir.smartdevelopers.smarttunnel.ui.models.SSHConfig;
 import ir.smartdevelopers.smarttunnel.ui.utils.SSHConfigViewUtil;
 import ir.smartdevelopers.smarttunnel.ui.viewModels.AddSSHConfigViewModel;
+import ir.smartdevelopers.smarttunnel.ui.viewModels.SshConfigVieModel;
 
 public class AdvancedSSHConfigFragment extends Fragment {
     public static final String KEY_SHOW_ERROR = " show_error";
     private FragmentAdvancedSshConfigBinding mBinding;
     private AddSSHConfigViewModel mViewModel;
+    private SshConfigVieModel mSshConfigVieModel;
     private SSHConfigViewUtil mConfigViewUtil;
 
     @Nullable
@@ -36,12 +38,13 @@ public class AdvancedSSHConfigFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         mViewModel = new ViewModelProvider(requireActivity()).get(AddSSHConfigViewModel.class);
+        mSshConfigVieModel = new ViewModelProvider(requireActivity()).get(SshConfigVieModel.class);
 
         initViews();
     }
 
     private void initViews() {
-        if (mViewModel.getSSHConfigBuilder().isConnectionModeLocked()){
+        if (mSshConfigVieModel.getSSHConfigBuilder().isConnectionModeLocked()){
             mBinding.sshConnectionTypeGroup.setEnabled(false);
             if (mViewModel.getJumperConfigBuilder() != null){
                 mViewModel.getJumperConfigBuilder()
@@ -56,9 +59,9 @@ public class AdvancedSSHConfigFragment extends Fragment {
             @Override
             public void onTextChanged(CharSequence text) {
                 if (!TextUtils.isEmpty(text)){
-                   mViewModel.getSSHConfigBuilder().setUDPGWPort(Integer.parseInt(text.toString()));
+                    mSshConfigVieModel.getSSHConfigBuilder().setUDPGWPort(Integer.parseInt(text.toString()));
                 }else {
-                    mViewModel.getSSHConfigBuilder().setUDPGWPort(0);
+                    mSshConfigVieModel.getSSHConfigBuilder().setUDPGWPort(0);
                 }
             }
         });
@@ -78,13 +81,13 @@ public class AdvancedSSHConfigFragment extends Fragment {
                 }
             }
         });
-        if (mViewModel.getSSHConfigBuilder().getConnectionType() == SSHConfig.CONNECTION_TYPE_DIRECT){
+        if (mSshConfigVieModel.getSSHConfigBuilder().getConnectionType() == SSHConfig.CONNECTION_TYPE_DIRECT){
             setDirect();
-        } else if (mViewModel.getSSHConfigBuilder().getConnectionType() == SSHConfig.CONNECTION_TYPE_SSH_PROXY) {
+        } else if (mSshConfigVieModel.getSSHConfigBuilder().getConnectionType() == SSHConfig.CONNECTION_TYPE_SSH_PROXY) {
             mBinding.sshConnectionTypeGroup.check(mBinding.radSshProxy.getId(),true);
-        } else if (mViewModel.getSSHConfigBuilder().getConnectionType() == SSHConfig.CONNECTION_TYPE_WEBSOCKET) {
+        } else if (mSshConfigVieModel.getSSHConfigBuilder().getConnectionType() == SSHConfig.CONNECTION_TYPE_WEBSOCKET) {
             mBinding.sshConnectionTypeGroup.check(mBinding.radWebsocket.getId(),true);
-        } else if (mViewModel.getSSHConfigBuilder().getConnectionType() == SSHConfig.CONNECTION_TYPE_WEBSOCKET) {
+        } else if (mSshConfigVieModel.getSSHConfigBuilder().getConnectionType() == SSHConfig.CONNECTION_TYPE_WEBSOCKET) {
             mBinding.sshConnectionTypeGroup.check(mBinding.radWebsocket.getId(),true);
         }
         if (getArguments() != null){
@@ -101,17 +104,17 @@ public class AdvancedSSHConfigFragment extends Fragment {
                 mBinding.typeContainer,true);
         mConfigViewUtil = new SSHConfigViewUtil(requireContext(),jumperBinding.jumperServer,mViewModel.getJumperConfigBuilder());
         mConfigViewUtil.initSshConfigViews();
-        mViewModel.getSSHConfigBuilder().setPayload(null);
-        mViewModel.getSSHConfigBuilder().setConnectionType(SSHConfig.CONNECTION_TYPE_SSH_PROXY);
-        mViewModel.getSSHConfigBuilder().setServerNameIndicator(null);
+        mSshConfigVieModel.getSSHConfigBuilder().setPayload(null);
+        mSshConfigVieModel.getSSHConfigBuilder().setConnectionType(SSHConfig.CONNECTION_TYPE_SSH_PROXY);
+        mSshConfigVieModel.getSSHConfigBuilder().setServerNameIndicator(null);
     }
 
     private void setDirect() {
         mBinding.typeContainer.removeAllViews();
         mViewModel.clearJumper();
-        mViewModel.getSSHConfigBuilder().setPayload(null);
-        mViewModel.getSSHConfigBuilder().setConnectionType(SSHConfig.CONNECTION_TYPE_DIRECT);
-        mViewModel.getSSHConfigBuilder().setServerNameIndicator(null);
+        mSshConfigVieModel.getSSHConfigBuilder().setPayload(null);
+        mSshConfigVieModel.getSSHConfigBuilder().setConnectionType(SSHConfig.CONNECTION_TYPE_DIRECT);
+        mSshConfigVieModel.getSSHConfigBuilder().setServerNameIndicator(null);
     }
 
     public void showErrors(){

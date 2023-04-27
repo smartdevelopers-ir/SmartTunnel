@@ -17,13 +17,10 @@ import engine.Engine;
 
 public class Tun2SocksChannel extends ChannelV4TCP{
 
-    private HttpProxy mProxy;
-    private int mLocalPort;
     private Socket mSocket;
 
-    public Tun2SocksChannel(HttpProxy proxy, String id, PacketV4 packetV4, RemoteConnection remoteConnection, ChannelManager channelManager) {
-        super(id, packetV4, remoteConnection, channelManager);
-        mProxy = proxy;
+    public Tun2SocksChannel( String id, PacketV4 packetV4, ChannelManager channelManager) {
+        super(id, packetV4, channelManager);
 
     }
 
@@ -34,9 +31,7 @@ public class Tun2SocksChannel extends ChannelV4TCP{
                 mSocket.close();
             } catch (IOException ignore) {}
         }
-        try {
-            mRemoteConnection.stopLocalPortForwarding("127.0.0.1",mLocalPort);
-        } catch (RemoteConnectionException ignore) {}
+
         super.close();
     }
 
@@ -47,12 +42,7 @@ public class Tun2SocksChannel extends ChannelV4TCP{
 
     @Override
     public void connect() throws RemoteConnectionException {
-        if (!mRemoteConnection.isPortInUse(1080)){
-            mLocalPort = mRemoteConnection.startLocalPortForwarding("127.0.0.1",1080,
-                    mProxy.getAddress(),mProxy.getPort()); // squid address in server
-        }else {
-            mLocalPort = 1080;
-        }
+
         Proxy proxy = new Proxy(Proxy.Type.SOCKS,new InetSocketAddress("127.0.0.1",1080));
         mSocket = new Socket(proxy);
         try {

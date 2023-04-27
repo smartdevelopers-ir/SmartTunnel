@@ -63,6 +63,16 @@ public class ByteUtil {
         }
         return sum;
     }
+    public static String getAddressName(byte[] address){
+        StringBuilder builder=new StringBuilder();
+        for (int i=0;i<address.length;i++){
+            builder.append(((int)address[i]) & 0xFF);
+            if (i < address.length-1){
+                builder.append(".");
+            }
+        }
+        return builder.toString();
+    }
 
     public static String hash(byte[] value){
         return DigestUtils.sha1Hex(value);

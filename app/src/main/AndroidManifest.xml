@@ -12,6 +12,7 @@
 
     <application
         android:allowBackup="true"
+        android:name=".SmartTunnelApp"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
@@ -32,53 +33,7 @@
             android:exported="true"
             android:grantUriPermissions="true"
             >
-            <intent-filter
-                android:priority="300">
 
-                <action
-                    android:name="android.intent.action.VIEW" />
-
-                <category
-                    android:name="android.intent.category.BROWSABLE" />
-
-                <category
-                    android:name="android.intent.category.DEFAULT" />
-
-                <data
-                    android:mimeType="*/*" />
-                <data android:host="*"/>
-
-                <data
-                    android:scheme="content" />
-
-                <data
-                    android:pathPattern=".*\\.st" />
-
-
-            </intent-filter>
-
-            <intent-filter android:priority="300">
-
-                <action
-                    android:name="android.intent.action.VIEW" />
-
-                <category
-                    android:name="android.intent.category.BROWSABLE" />
-
-                <category
-                    android:name="android.intent.category.DEFAULT" />
-
-                <data
-                    android:mimeType="*/*" />
-                <data android:host="*"/>
-                <data
-                    android:scheme="file" />
-
-
-                <data
-                    android:pathPattern=".*\\.st" />
-
-            </intent-filter>
             <!-- <intent-filter> -->
             <!-- <action android:name="android.intent.action.MAIN" /> -->
 
@@ -88,13 +43,48 @@
         </activity>
         <activity
             android:name=".ui.activities.MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:grantUriPermissions="true"
+            >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter
+                android:priority="300">
+                <action
+                    android:name="android.intent.action.VIEW" />
+                <category
+                    android:name="android.intent.category.BROWSABLE" />
+                <category
+                    android:name="android.intent.category.DEFAULT" />
+                <data
+                    android:mimeType="*/*" />
+                <data android:host="*"/>
+                <data
+                    android:scheme="content" />
+                <data
+                    android:pathPattern=".*\\.st" />
+            </intent-filter>
+
+            <intent-filter android:priority="300">
+                <action
+                    android:name="android.intent.action.VIEW" />
+                <category
+                    android:name="android.intent.category.BROWSABLE" />
+                <category
+                    android:name="android.intent.category.DEFAULT" />
+                <data
+                    android:mimeType="*/*" />
+                <data android:host="*"/>
+                <data
+                    android:scheme="file" />
+                <data
+                    android:pathPattern=".*\\.st" />
+            </intent-filter>
         </activity>
+        <activity android:name="ir.smartdevelopers.smarttunnel.ui.activities.AddOpenVpnConfigActivity" />
 
         <service
             android:name="ir.smartdevelopers.smarttunnel.MyVpnService"

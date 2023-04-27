@@ -16,6 +16,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -23,7 +24,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.gson.Gson;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -31,17 +31,25 @@ import java.util.Objects;
 
 import ir.smartdevelopers.smarttunnel.R;
 import ir.smartdevelopers.smarttunnel.databinding.FragmentConfigsBinding;
+import ir.smartdevelopers.smarttunnel.ui.activities.AddOpenVpnConfigActivity;
 import ir.smartdevelopers.smarttunnel.ui.activities.AddSSHConfigActivity;
 import ir.smartdevelopers.smarttunnel.ui.adapters.ConfigListAdapter;
+import ir.smartdevelopers.smarttunnel.ui.exceptions.ConfigNotSupportException;
 import ir.smartdevelopers.smarttunnel.ui.interfaces.OnCompleteListener;
 import ir.smartdevelopers.smarttunnel.ui.interfaces.OnListItemClickListener;
+import ir.smartdevelopers.smarttunnel.ui.models.Config;
 import ir.smartdevelopers.smarttunnel.ui.models.ConfigListModel;
+import ir.smartdevelopers.smarttunnel.ui.models.OpenVpnConfig;
 import ir.smartdevelopers.smarttunnel.ui.models.SSHConfig;
+import ir.smartdevelopers.smarttunnel.ui.services.DeleteConfigFileService;
+import ir.smartdevelopers.smarttunnel.ui.utils.AlertUtil;
 import ir.smartdevelopers.smarttunnel.ui.utils.ConfigsUtil;
 import ir.smartdevelopers.smarttunnel.ui.utils.PrefsUtil;
+import ir.smartdevelopers.smarttunnel.ui.utils.Util;
 
 public class ConfigsFragment extends Fragment {
 
+    public static final String KEY_CONFIG_URI ="config_uri";
     private FragmentConfigsBinding mBinding;
     private ConfigListAdapter mAdapter;
     private List<ConfigListModel> mConfigListModels;
@@ -105,6 +113,10 @@ public class ConfigsFragment extends Fragment {
         mBinding.configsRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         mBinding.configsRecyclerView.addItemDecoration(new DividerItemDecoration(requireContext(),DividerItemDecoration.VERTICAL));
         mBinding.configsRecyclerView.setAdapter(mAdapter);
+        if (getArguments() != null) {
+            Uri configUri = getArguments().getParcelable(KEY_CONFIG_URI);
+            processImport(configUri);
+        }
     }
 
     private void initListeners() {
@@ -116,6 +128,10 @@ public class ConfigsFragment extends Fragment {
                 mLastDeletedConfig = model;
                 mLastDeletedConfigPosition = position;
                 showUndoDeleteAction();
+                DeleteConfigFileService.scheduleWork(requireActivity(),8);
+                if (mAdapter.getItemCount() == 0){
+                    mBinding.txtNoConfigMessage.setVisibility(View.VISIBLE);
+                }
             }
         };
         mOnEditClickListener = new OnListItemClickListener<ConfigListModel>() {
@@ -136,7 +152,15 @@ public class ConfigsFragment extends Fragment {
 
 
     private void openEditConfigActivity(ConfigListModel model, int position) {
-        Intent intent = new Intent(requireContext(),AddSSHConfigActivity.class);
+        Intent intent = null;
+        if (Objects.equals(model.type, SSHConfig.CONFIG_TYPE)){
+             intent = new Intent(requireContext(),AddSSHConfigActivity.class);
+        } else if (Objects.equals(model.type, OpenVpnConfig.CONFIG_TYPE)) {
+            intent = new Intent(requireContext(),AddOpenVpnConfigActivity.class);
+        }
+        if (intent == null){
+            return;
+        }
         intent.putExtra(AddSSHConfigActivity.KEY_MODE,AddSSHConfigActivity.MODE_EDIT);
         intent.putExtra(AddSSHConfigActivity.KEY_CONFIG_MODEL,new Gson().toJson(model));
         mAddConfigLauncher.launch(intent);
@@ -150,11 +174,13 @@ public class ConfigsFragment extends Fragment {
     }
 
     private void initViews() {
+        Util.setStatusBarPaddingToView(mBinding.appbar);
         undoSnackBar=Snackbar.make(mBinding.getRoot(),R.string.undo_delete_config,4000);
         undoSnackBar.setAction(R.string.undo, new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (mAdapter != null){
+                    mBinding.txtNoConfigMessage.setVisibility(View.GONE);
                     mAdapter.addConfig(mLastDeletedConfig,mLastDeletedConfigPosition);
                 }
                 PrefsUtil.addConfig(requireContext(),mLastDeletedConfig);
@@ -162,7 +188,7 @@ public class ConfigsFragment extends Fragment {
         });
         mBinding.toolbar.setOnMenuItemClickListener(item -> {
             if (item.getItemId() == R.id.action_add){
-                openAddConfigActivity();
+                openAddConfigActivity(OpenVpnConfig.CONFIG_TYPE);
             } else if (item.getItemId() == R.id.action_import) {
                 openImportActivity();
             }
@@ -182,40 +208,82 @@ public class ConfigsFragment extends Fragment {
         if (uri == null){
             return;
         }
-        if (!uri.toString().endsWith(".st")){
-            Toast.makeText(getContext(), R.string.config_not_supported, Toast.LENGTH_SHORT).show();
-            return;
-        }
+        AlertDialog progressDialog = AlertUtil.showLoadingDialog(requireActivity());
         try {
+            final List<ConfigListModel> currentConfigs = PrefsUtil.getAllConfigs(requireContext().getApplicationContext());
             InputStream inputStream = requireContext().getContentResolver().openInputStream(uri);
             ConfigsUtil.importConfig(inputStream, new OnCompleteListener<Pair<String, String>>() {
                 @Override
                 public void onComplete(Pair<String, String> result) {
+                    progressDialog.dismiss();
                     if (result == null){
-                        Toast.makeText(getContext(), R.string.error_parsing_config, Toast.LENGTH_SHORT).show();
+                        AlertUtil.showToast(getContext(), R.string.error_parsing_config, Toast.LENGTH_SHORT, AlertUtil.Type.ERROR);
                     }else {
+                        Config config = null;
                         if (Objects.equals(result.first, SSHConfig.CONFIG_TYPE)){
-                            SSHConfig config = new Gson().fromJson(result.second,SSHConfig.class);
-                            ConfigListModel model = new ConfigListModel(config.getName(),
-                                    config.getId(),mAdapter.getItemCount()==0,
-                                    config.getType());
-                            mAdapter.addConfig(model);
-                            PrefsUtil.addConfig(requireContext(),model);
-                            try {
-                                ConfigsUtil.saveConfig(requireContext(),config);
-                            } catch (IOException e) {
-                                Toast.makeText(requireContext(), R.string.error_parsing_config, Toast.LENGTH_SHORT).show();
-                            }
+                            config = new Gson().fromJson(result.second,SSHConfig.class);
+
+                        }else if (Objects.equals(result.first, OpenVpnConfig.CONFIG_TYPE)){
+                            config = OpenVpnConfig.fromJson(result.second);
+
+                        }
+                        if (config == null){
+                            AlertUtil.showToast(getContext(), R.string.config_not_supported, Toast.LENGTH_SHORT, AlertUtil.Type.ERROR);
+                            return;
+                        }
+                        ConfigListModel model = new ConfigListModel(config.getName(),
+                                config.getId(),mAdapter.getItemCount()==0,
+                                config.getType());
+                        model.note = config.getNote();
+                        if (currentConfigs.contains(model)){
+                            AlertUtil.showToast(requireContext(), R.string.config_already_exists, Toast.LENGTH_SHORT, AlertUtil.Type.WARNING);
+                            return;
+                        }
+                        addConfigListModel(model);
+                        AlertUtil.showToast(requireContext(),R.string.config_imported_successfully,Toast.LENGTH_SHORT, AlertUtil.Type.SUCCESS);
+                        try {
+                            ConfigsUtil.saveConfig(requireContext(),config);
+                        } catch (IOException e) {
+                            AlertUtil.showToast(requireContext(), R.string.error_parsing_config, Toast.LENGTH_SHORT, AlertUtil.Type.ERROR);
                         }
                     }
                 }
+
+                @Override
+                public void onException(Exception e) {
+                    progressDialog.dismiss();
+                    if (e instanceof ConfigNotSupportException){
+                       AlertUtil.showToast(getContext(), R.string.config_not_supported, Toast.LENGTH_SHORT, AlertUtil.Type.ERROR);
+                   }else {
+                       AlertUtil.showToast(getContext(), R.string.error_parsing_config, Toast.LENGTH_SHORT, AlertUtil.Type.ERROR);
+                   }
+                }
             });
         } catch (Exception e) {
-            Toast.makeText(getContext(), R.string.error_parsing_config, Toast.LENGTH_SHORT).show();
+            AlertUtil.showToast(getContext(), R.string.error_parsing_config, Toast.LENGTH_SHORT, AlertUtil.Type.ERROR);
         }
+
     }
-    private void openAddConfigActivity() {
-        Intent intent = new Intent(requireContext(),AddSSHConfigActivity.class);
+
+
+    private void addConfigListModel(ConfigListModel model){
+        if (mAdapter != null){
+            mAdapter.addConfig(model);
+        }
+        PrefsUtil.addConfig(requireContext(),model);
+        mBinding.txtNoConfigMessage.setVisibility(View.GONE);
+    }
+
+    private void openAddConfigActivity(String type) {
+        Intent intent = null;
+        if (Objects.equals(type, SSHConfig.CONFIG_TYPE)){
+            intent = new Intent(requireContext(),AddSSHConfigActivity.class);
+        } else if (Objects.equals(type, OpenVpnConfig.CONFIG_TYPE)) {
+            intent = new Intent(requireContext(),AddOpenVpnConfigActivity.class);
+        }
+        if (intent == null){
+            return;
+        }
         intent.putExtra(AddSSHConfigActivity.KEY_MODE,AddSSHConfigActivity.MODE_ADD);
         mAddConfigLauncher.launch(intent);
     }

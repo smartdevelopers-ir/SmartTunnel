@@ -1,5 +1,7 @@
 package ir.smartdevelopers.smarttunnel.managers;
 
+import android.annotation.SuppressLint;
+
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 
@@ -10,6 +12,8 @@ import ir.smartdevelopers.smarttunnel.packet.TCP;
 import ir.smartdevelopers.smarttunnel.packet.TransmissionProtocol;
 import ir.smartdevelopers.smarttunnel.packet.TransmissionProtocolFactory;
 import ir.smartdevelopers.smarttunnel.packet.UDP;
+import ir.smartdevelopers.smarttunnel.utils.ByteUtil;
+import ir.smartdevelopers.smarttunnel.utils.Logger;
 
 /**
  * We need find out what kind of paket must be send to remote server
@@ -70,6 +74,7 @@ public class PacketManager {
                     }
                     Packet packet =mPacketsQueue.poll();
                     if (packet != null){
+                        Logger.logPacket("toLocal",packet);
                         mServerPacketListener.onPacketFromServer(packet);
                     }else {
                         mWriterLock.acquire();
@@ -116,8 +121,10 @@ public class PacketManager {
 //
 //       PacketV4 v4 = new PacketV4(header,udp,data);
 //       mPacketManager.writeToLocal(v4);
+
         mChannelManager.sendToRemoteServer(packet);
     }
+
     private Packet getPacket(byte[] packetBytes) {
         byte version = (byte) (packetBytes[0] >> 4);
         if (version == 4){

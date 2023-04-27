@@ -13,16 +13,14 @@ android {
         targetSdk 33
         versionCode 1
         versionName "1.0"
-
+        dimension = "implementation"
+        buildConfigField("boolean", "openvpn3", "true")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-//        externalNativeBuild {
-//            cmake {
-//                cppFlags "-std=c++11"
-//                arguments "-DANDROID_STL=c++_static"
-//            }
-//        }
-    }
 
+    }
+    buildFeatures {
+        aidl = true
+    }
     buildTypes {
         release {
             minifyEnabled false
@@ -37,12 +35,18 @@ android {
         viewBinding true
     }
     packagingOptions.resources.excludes.add("META-INF/DEPENDENCIES")
-//    externalNativeBuild {
-//        cmake {
-//            path "src/main/cpp/CMakeLists.txt"
-//            version "3.10.2"
-//        }
-//    }
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+        }
+    }
+    ndkVersion '25.1.8937393'
+
+    sourceSets {
+        main{
+            assets.setSrcDirs(["src/main/assets", "build/ovpnassets"])
+        }
+    }
 }
 
 dependencies {
@@ -52,6 +56,7 @@ dependencies {
     implementation 'androidx.documentfile:documentfile:1.0.1'
     implementation 'com.google.android.material:material:1.8.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.work:work-runtime:2.8.1'
     implementation files('libs/tun2socks.aar')
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
@@ -72,3 +77,39 @@ dependencies {
 
 
 }
+
+
+// Workaround for macOS(arm64) and macOS(intel) since it otherwise does not find swig and
+// I cannot get the Exec task to respect the PATH environment :(
+//if (new File("/opt/homebrew/bin/swig").exists()) {
+//    swigcmd = "/opt/homebrew/bin/swig";
+//} else if (new File("/usr/local/bin/swig").exists()) {
+//    swigcmd = "/usr/local/bin/swig";
+//}
+//
+//public File registerGenTask(String variantName, String variantDirName) {
+//    String swigcmd = "swig";
+//    File baseDir = new File(getBuildDir(), "generated/source/ovpn3swig/" + variantDirName);
+//    File genDir = new File(baseDir, "net/openvpn/ovpn3");
+//
+//    TaskProvider<Exec> generateOpenVPN3SwigTask = getTasks().register("generateOpenVPN3Swig" + variantName, Exec.class, task -> {
+//        task.doFirst(t -> {
+//            mkdir(genDir);
+//        });
+//        task.commandLine(swigcmd, "-outdir", genDir.getAbsolutePath(), "-outcurrentdir", "-c++", "-java", "-package", "net.openvpn.ovpn3",
+//                "-Isrc/main/cpp/openvpn3/client", "-Isrc/main/cpp/openvpn3/",
+//                "-DOPENVPN_PLATFORM_ANDROID",
+//                "-o", genDir.getAbsolutePath() + "/ovpncli_wrap.cxx", "-oh", genDir.getAbsolutePath() + "/ovpncli_wrap.h",
+//                "src/main/cpp/openvpn3/client/ovpncli.i");
+//        task.getInputs().files("src/main/cpp/openvpn3/client/ovpncli.i");
+//        task.getOutputs().dir(genDir);
+//    });
+//
+//    return baseDir;
+//}
+//
+//android.getApplicationVariants().all(variant -> {
+//    File sourceDir = registerGenTask(variant.getName(), variant.getBaseName().replace("-", "/"));
+//    TaskProvider<Exec> generateOpenVPN3SwigTask = getTasks().named("generateOpenVPN3Swig" + variant.getName(), Exec.class);
+//    variant.registerJavaGeneratingTask(generateOpenVPN3SwigTask.get(), sourceDir);
+//});

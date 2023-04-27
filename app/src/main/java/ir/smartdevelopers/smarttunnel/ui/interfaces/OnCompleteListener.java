@@ -1,5 +1,6 @@
 package ir.smartdevelopers.smarttunnel.ui.interfaces;
 
-public interface OnCompleteListener<E> {
-    void onComplete(E e);
+public abstract class OnCompleteListener<E> {
+   public abstract void onComplete(E e);
+   public void onException(Exception e){};
 }

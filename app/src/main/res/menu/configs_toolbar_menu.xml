@@ -5,11 +5,16 @@
         android:id="@+id/action_import"
         android:icon="@drawable/ic_import"
         android:title="@string/import_config"
-        app:showAsAction="always" />
+        app:showAsAction="always"
+        app:iconTint="?attr/colorOnPrimary"
+        />
     <item
         android:id="@+id/action_add"
         android:icon="@drawable/ic_add"
         android:title="@string/add_config"
-        app:showAsAction="always" />
+        app:showAsAction="always"
+        app:iconTint="?attr/colorOnPrimary"
+
+        />
 
 </menu>

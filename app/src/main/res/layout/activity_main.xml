@@ -24,7 +24,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:menu="@menu/main_nav_menu"
         app:compatShadowEnabled="true"
-        android:theme="@style/BottomNavTextAppearanceActive"
         >
 
     </com.google.android.material.bottomnavigation.BottomNavigationView>

@@ -28,7 +28,9 @@ import ir.smartdevelopers.smarttunnel.ui.models.ConfigListModel;
 import ir.smartdevelopers.smarttunnel.ui.models.SSHConfig;
 import ir.smartdevelopers.smarttunnel.ui.models.SSHProxy;
 import ir.smartdevelopers.smarttunnel.ui.utils.ConfigsUtil;
+import ir.smartdevelopers.smarttunnel.ui.utils.Util;
 import ir.smartdevelopers.smarttunnel.ui.viewModels.AddSSHConfigViewModel;
+import ir.smartdevelopers.smarttunnel.ui.viewModels.SshConfigVieModel;
 import ir.smartdevelopers.smarttunnel.utils.Logger;
 
 public class AddSSHConfigActivity extends AppCompatActivity {
@@ -39,6 +41,7 @@ public class AddSSHConfigActivity extends AppCompatActivity {
 
     private ActivityAddSshconfigBinding mBinding;
     private AddSSHConfigViewModel mViewModel;
+    private SshConfigVieModel mSshConfigVieModel;
     private ActivityResultLauncher<String> storagePermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(),
             new ActivityResultCallback<Boolean>() {
                 @Override
@@ -57,11 +60,13 @@ public class AddSSHConfigActivity extends AppCompatActivity {
         mBinding = ActivityAddSshconfigBinding.inflate(getLayoutInflater());
         setContentView(mBinding.getRoot());
         mViewModel = new ViewModelProvider(this).get(AddSSHConfigViewModel.class);
+        mSshConfigVieModel = new ViewModelProvider(this).get(SshConfigVieModel.class);
         initViews();
         showSimpleSSHSettingsFragment(false,null);
     }
 
     private void initViews() {
+        Util.setStatusBarPaddingToView(mBinding.appbar);
         mBinding.btnSave.setOnClickListener(v -> {
             saveConfig();
         });
@@ -97,7 +102,7 @@ public class AddSSHConfigActivity extends AppCompatActivity {
                     SSHConfig config = (SSHConfig) ConfigsUtil.loadConfig(this,model.configId,model.type);
                     if (config != null){
                         SSHConfig.Builder builder = config.toBuilder();
-                        mViewModel.setSSHConfig(builder);
+                        mSshConfigVieModel.setSSHConfig(builder);
                         if (config.getJumper() != null) {
                             mViewModel.setJumperConfigBuilder(config.getJumper().getSSHConfig().toBuilder());
                         }
@@ -163,7 +168,7 @@ public class AddSSHConfigActivity extends AppCompatActivity {
     }
     /** Before calling this, call {@link #checkConfig()}*/
     private SSHConfig generateConfig(){
-        SSHConfig.Builder builder = mViewModel.getSSHConfigBuilder();
+        SSHConfig.Builder builder = mSshConfigVieModel.getSSHConfigBuilder();
         if (builder.getConnectionType() == SSHConfig.CONNECTION_TYPE_SSH_PROXY){
             SSHProxy jumper = new SSHProxy(mViewModel.getJumperConfigBuilder().build());
             builder.setJumper(jumper);
@@ -171,7 +176,7 @@ public class AddSSHConfigActivity extends AppCompatActivity {
         return builder.build();
     }
     private boolean checkConfig(){
-        SSHConfig.Builder builder = mViewModel.getSSHConfigBuilder();
+        SSHConfig.Builder builder = mSshConfigVieModel.getSSHConfigBuilder();
         if (
                 TextUtils.isEmpty(builder.getServerAddress()) ||
                         TextUtils.isEmpty(builder.getName()) ||

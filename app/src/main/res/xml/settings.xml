@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
 <Preference
     app:title="@string/proxy"
     app:key="@string/key_proxy"
@@ -12,5 +13,15 @@
         app:key="@string/key_dns"
         app:icon="@drawable/ic_dns"
         app:allowDividerAbove="true"
+        app:allowDividerBelow="true"
+        tools:summary="asdasd"
         />
+    <CheckBoxPreference
+        app:title="@string/connection_sound"
+        app:summary="@string/connection_sound_summary"
+        app:key="@string/key_connection_sound"
+        app:allowDividerAbove="true"
+        app:icon="@drawable/ic_ringtone"
+        />
+
 </PreferenceScreen>

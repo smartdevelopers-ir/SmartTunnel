@@ -1,13 +1,19 @@
 package ir.smartdevelopers.smarttunnel.ui.models;
 
+import android.os.ParcelFileDescriptor;
+
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.Socket;
 
-import engine.Key;
+import ir.smartdevelopers.smarttunnel.MyVpnService;
 import ir.smartdevelopers.smarttunnel.channels.JschRemoteConnection;
 import ir.smartdevelopers.smarttunnel.exceptions.RemoteConnectionException;
 import ir.smartdevelopers.smarttunnel.managers.PacketManager;
 import ir.smartdevelopers.smarttunnel.managers.Tun2SocksChannelManager;
 import ir.smartdevelopers.smarttunnel.packet.Packet;
+import ir.smartdevelopers.smarttunnel.ui.classes.LocalReader;
 import ir.smartdevelopers.smarttunnel.ui.exceptions.ConfigException;
 
 public class Tun2SocksConfig extends Config{
@@ -23,6 +29,8 @@ public class Tun2SocksConfig extends Config{
     private PacketManager mPacketManager;
     private JschRemoteConnection mRemoteConnection;
     private boolean mCanceled = false;
+    private transient FileOutputStream mLocalOut;
+    private transient LocalReader mLocalReader;
     public Tun2SocksConfig(String name, String id, HttpProxy proxy, String serverAddress,
                            int serverPort, String username, String password,
                            boolean usePrivateKey, PrivateKey privateKey, int UDPGWPort) {
@@ -40,17 +48,35 @@ public class Tun2SocksConfig extends Config{
     @Override
     public void connect() throws ConfigException {
         try {
-            mRemoteConnection = new JschRemoteConnection(mServerAddress,mServerPort,mUsername,mPassword);
+            mRemoteConnection = new JschRemoteConnection(mServerAddress,mServerPort,mUsername,mPassword,
+                    false, false, false);
             mRemoteConnection.setPrivateKey(mPrivateKey);
             mRemoteConnection.connect();
-            engine.Key key = new Key();
-//            Tun2SocksChannelManager channelManager = new Tun2SocksChannelManager(mRemoteConnection,
-//                    mProxy,mUDPGWPort);
-//            ServerPacketListener packetListener = new ServerPacketListener(this);
-//            mPacketManager = new PacketManager(packetListener,channelManager);
+            if (mRemoteConnection.isPortInUse(1080)){
+                mRemoteConnection.stopLocalPortForwarding("127.0.0.1",1080);
+            }
+             mRemoteConnection.startLocalPortForwarding("127.0.0.1",1080,
+                    mProxy.getAddress(),mProxy.getPort());
+
+            Tun2SocksChannelManager channelManager = new Tun2SocksChannelManager(mRemoteConnection,mUDPGWPort);
+            ServerPacketListener packetListener = new ServerPacketListener(this);
+            mPacketManager = new PacketManager(packetListener,channelManager);
         } catch (RemoteConnectionException e) {
             throw new ConfigException(e);
         }
+    }
+    @Override
+    public void setFileDescriptor(ParcelFileDescriptor fileDescriptor) {
+        super.setFileDescriptor(fileDescriptor);
+        FileInputStream localIn = new FileInputStream(fileDescriptor.getFileDescriptor());
+        mLocalOut = new FileOutputStream(fileDescriptor.getFileDescriptor());
+        mLocalReader = new LocalReader(localIn,this,mPacketManager);
+        mLocalReader.start();
+    }
+
+    @Override
+    public ParcelFileDescriptor getFileDescriptor() {
+        return null;
     }
 
     @Override
@@ -60,7 +86,9 @@ public class Tun2SocksConfig extends Config{
 
     @Override
     public void retry() {
-
+        if (mVpnService != null){
+            MyVpnService.reconnect(mVpnService.getApplicationContext());
+        }
     }
 
     @Override
@@ -72,6 +100,9 @@ public class Tun2SocksConfig extends Config{
         if (mRemoteConnection != null) {
             mRemoteConnection.disconnect();
         }
+        if (mLocalReader != null){
+            mLocalReader.interrupt();
+        }
     }
 
     @Override
@@ -79,10 +110,7 @@ public class Tun2SocksConfig extends Config{
         return mCanceled;
     }
 
-    @Override
-    public void sendPacketToRemoteServer(byte[] packet) {
-        mPacketManager.sendToRemoteServer(packet);
-    }
+
     private static class ServerPacketListener implements PacketManager.ServerPacketListener {
 
         private final Tun2SocksConfig mConfig;
@@ -94,8 +122,12 @@ public class Tun2SocksConfig extends Config{
         @Override
         public synchronized void onPacketFromServer(Packet packet) {
 
-            if (mConfig.mOnPacketFromServerListener != null) {
-                mConfig.mOnPacketFromServerListener.onPacketFromServer(packet.getPacketBytes());
+            if (mConfig.mLocalOut != null) {
+                try {
+                    mConfig.mLocalOut.write(packet.getPacketBytes());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
 
         }

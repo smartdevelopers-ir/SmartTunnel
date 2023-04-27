@@ -21,9 +21,11 @@ import ir.smartdevelopers.smarttunnel.utils.Logger;
 public class SshChannelV4TCP extends ChannelV4TCP implements TCPController.TcpListener {
 
     private RemoteConnection.DirectTCPChannel mChannel;
+    private RemoteConnection mRemoteConnection;
 
     public SshChannelV4TCP(String id, PacketV4 packetV4, RemoteConnection remoteConnection, ChannelManager channelManager) {
-        super(id, packetV4, remoteConnection, channelManager);
+        super(id, packetV4,  channelManager);
+        mRemoteConnection = remoteConnection;
     }
 
 
@@ -34,7 +36,7 @@ public class SshChannelV4TCP extends ChannelV4TCP implements TCPController.TcpLi
     public void close() {
         if (mChannel != null) {
             try {
-                mChannel.stop();
+                mRemoteConnection.stopDirectTCPChannel(mChannel);
             } catch (RemoteConnectionException ignore) {
 
             }

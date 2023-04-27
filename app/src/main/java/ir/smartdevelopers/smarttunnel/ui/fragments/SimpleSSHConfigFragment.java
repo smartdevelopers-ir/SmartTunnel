@@ -16,11 +16,12 @@ import ir.smartdevelopers.smarttunnel.databinding.FragmentSimpleSshConfigBinding
 import ir.smartdevelopers.smarttunnel.ui.classes.SimpleTextWatcher;
 import ir.smartdevelopers.smarttunnel.ui.utils.SSHConfigViewUtil;
 import ir.smartdevelopers.smarttunnel.ui.viewModels.AddSSHConfigViewModel;
+import ir.smartdevelopers.smarttunnel.ui.viewModels.SshConfigVieModel;
 
 public class SimpleSSHConfigFragment extends Fragment {
     public static final String KEY_SHOW_ERROR = " show_error";
     private FragmentSimpleSshConfigBinding mBinding;
-    private AddSSHConfigViewModel mViewModel;
+    private SshConfigVieModel mViewModel;
     private SSHConfigViewUtil configViewUtil;
     @Nullable
     @Override
@@ -32,7 +33,7 @@ public class SimpleSSHConfigFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        mViewModel = new ViewModelProvider(requireActivity()).get(AddSSHConfigViewModel.class);
+        mViewModel = new ViewModelProvider(requireActivity()).get(SshConfigVieModel.class);
 //        if (mViewModel.getSSHConfigBuilder() == null){
 //            mViewModel.setSSHConfig(new SSHConfig.Builder(SSHConfig.MODE_MAIN_CONNECTION));
 //        }

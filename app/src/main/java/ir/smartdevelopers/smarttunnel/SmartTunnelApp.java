@@ -1,0 +1,73 @@
+package ir.smartdevelopers.smarttunnel;
+
+import android.app.Application;
+import android.os.Build;
+import android.os.StrictMode;
+import android.os.strictmode.Violation;
+
+import androidx.annotation.RequiresApi;
+import androidx.core.app.NotificationChannelCompat;
+import androidx.core.app.NotificationManagerCompat;
+
+import java.util.concurrent.Executors;
+
+import ir.smartdevelopers.smarttunnel.utils.Logger;
+
+public class SmartTunnelApp extends Application {
+    public static int mStatusBarHeight = 0;
+    @Override
+    public void onCreate() {
+
+        if (BuildConfig.BUILD_TYPE.equals("debug")) {
+            enableStrictModes();
+        }
+        super.onCreate();
+//        StatusListener mStatus = new StatusListener();
+//        mStatus.init(getApplicationContext());
+        createNotificatonChannel();
+        if (Logger.getContext() == null){
+            Logger.setContext(getApplicationContext());
+        }
+
+    }
+
+    private void createNotificatonChannel() {
+        NotificationChannelCompat.Builder channelBuilder = new NotificationChannelCompat
+                .Builder(MyVpnService.NOTIFICATION_CHANNEL_BG_ID, NotificationManagerCompat.IMPORTANCE_DEFAULT);
+        NotificationChannelCompat channelCompat = channelBuilder.setName(getString(R.string.notification_bg_name))
+                .setDescription(getString(R.string.notification_bg_description))
+                .build();
+        NotificationManagerCompat managerCompat = NotificationManagerCompat.from(getApplicationContext());
+        managerCompat.createNotificationChannel(channelCompat);
+    }
+    private void enableStrictModes() {
+        StrictMode.ThreadPolicy.Builder tpbuilder = new StrictMode.ThreadPolicy.Builder()
+                .detectAll()
+                .penaltyLog();
+
+
+
+        StrictMode.VmPolicy.Builder vpbuilder = new StrictMode.VmPolicy.Builder()
+                .detectAll()
+                .penaltyLog();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            tpbuilder.penaltyListener(Executors.newSingleThreadExecutor(), this::logViolation);
+            vpbuilder.penaltyListener(Executors.newSingleThreadExecutor(), this::logViolation);
+
+        }
+        //tpbuilder.penaltyDeath();
+        //vpbuilder.penaltyDeath();
+
+        StrictMode.VmPolicy policy = vpbuilder.build();
+        StrictMode.setVmPolicy(policy);
+
+    }
+    @RequiresApi(api = Build.VERSION_CODES.P)
+    public void logViolation(Violation v) {
+        String name = Application.getProcessName();
+        System.err.println("------------------------- Violation detected in " + name + " ------" + v.getCause() + "---------------------------");
+        Logger.logError(v.getLocalizedMessage());
+    }
+
+}

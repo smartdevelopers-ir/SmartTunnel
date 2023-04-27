@@ -1,27 +1,39 @@
 package ir.smartdevelopers.smarttunnel.channels;
 
+import android.annotation.SuppressLint;
+
+import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelDirectTCPIP;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.KeyPair;
 import com.jcraft.jsch.ProxyHTTP;
 import com.jcraft.jsch.Session;
+import com.jcraft.jsch.UserInfo;
 
-import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.io.StringReader;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketException;
+import java.util.Objects;
+import java.util.concurrent.Executors;
 
 import ir.smartdevelopers.smarttunnel.exceptions.RemoteConnectionException;
 import ir.smartdevelopers.smarttunnel.packet.Packet;
 import ir.smartdevelopers.smarttunnel.ui.classes.AcceptAllHostRepo;
+import ir.smartdevelopers.smarttunnel.ui.classes.JschSimpleUserInfo;
+import ir.smartdevelopers.smarttunnel.ui.exceptions.AuthFailedException;
 import ir.smartdevelopers.smarttunnel.ui.models.HttpProxy;
+import ir.smartdevelopers.smarttunnel.ui.models.LogItem;
 import ir.smartdevelopers.smarttunnel.ui.models.PrivateKey;
 import ir.smartdevelopers.smarttunnel.ui.models.Proxy;
+import ir.smartdevelopers.smarttunnel.utils.Logger;
 
 public class JschRemoteConnection extends RemoteConnection {
     private Session mSession;
@@ -31,14 +43,21 @@ public class JschRemoteConnection extends RemoteConnection {
     private String password;
     private PrivateKey privateKey;
     private Proxy mProxy;
+    private boolean isServerNameLocked;
+    private boolean isServerPortLocked;
+    private boolean isUsernameLocked;
 
     public JschRemoteConnection(String serverAddress, int serverPort,
-                                String username, String password) {
+                                String username, String password,
+                                boolean isServerNameLocked, boolean isServerPortLocked, boolean isUsernameLocked) {
         this.serverAddress = serverAddress;
         this.serverPort = serverPort;
         this.username = username;
         this.password = password;
+        this.isServerNameLocked = isServerNameLocked;
 
+        this.isServerPortLocked = isServerPortLocked;
+        this.isUsernameLocked = isUsernameLocked;
     }
 
     @Override
@@ -76,10 +95,13 @@ public class JschRemoteConnection extends RemoteConnection {
         mProxy = proxy;
     }
 
+    @SuppressLint("DefaultLocale")
     @Override
     public void connect() throws RemoteConnectionException {
         JSch jSch = new JSch();
+
         jSch.setHostKeyRepository(new AcceptAllHostRepo());
+
         if (privateKey != null) {
             try {
                 KeyPair keyPair = KeyPair.load(jSch, privateKey.key.getBytes(), null);
@@ -92,13 +114,45 @@ public class JschRemoteConnection extends RemoteConnection {
             }
         }
         try {
+            String proxyMessage = "";
+            if (mProxy instanceof HttpProxy){
+                proxyMessage = String.format(" using proxy %s:%d",mProxy.getAddress(),mProxy.getPort());
+            }
+            if (isServerNameLocked){
+                Logger.logMessage(new LogItem(String.format("Connecting to SSH server %s",proxyMessage)));
+            }else {
+                Logger.logMessage(new LogItem(String.format("Connecting to SSH server %s:%d %s",serverAddress,serverPort,proxyMessage)));
+            }
+            if (!isUsernameLocked){
+                Logger.logMessage(new LogItem(String.format("Username : %s",username)));
+
+            }
             mSession = jSch.getSession(username, serverAddress, serverPort);
+
+
             if (mProxy instanceof HttpProxy) {
                 mSession.setProxy(new ProxyHTTP(mProxy.getAddress(),mProxy.getPort()));
             }
+            if (privateKey == null){
+                Logger.logMessage(new LogItem("Auth = password"));
+            }else {
+                Logger.logMessage(new LogItem("Auth = private key"));
+            }
             mSession.setPassword(password);
+            mSession.setUserInfo(new JschSimpleUserInfo());
             mSession.connect(15000);
+
+            Logger.logStyledMessage("Connected to SSH server","#4AD8E2",true);
         }catch (Exception e){
+            Logger.logStyledMessage("connection to SSH server failed","#FFBA44",true);
+            if (e instanceof JSchException){
+                if (Objects.equals("Auth fail",e.getMessage())){
+                    Logger.logStyledMessage("Authentication failed","#FFBA44",true);
+                    throw  new RemoteConnectionException(new AuthFailedException());
+                }
+
+            }
+            Logger.logMessage(new LogItem("Error while connecting to SSH server : "+e.getMessage()));
             throw new RemoteConnectionException(e);
         }
     }
@@ -109,6 +163,7 @@ public class JschRemoteConnection extends RemoteConnection {
             return;
         }
         mSession.disconnect();
+        Logger.logMessage(new LogItem("SSH server disconnected"));
     }
 
     @Override
@@ -182,30 +237,6 @@ public class JschRemoteConnection extends RemoteConnection {
                 throw new RemoteConnectionException(e);
             }
         }
-//        @Override
-//        public void start() throws RemoteConnectionException {
-//            if (localAddress == null){
-//                localAddress = "127.0.0.1";
-//            }
-//
-//            try {
-//                mChannel = (ChannelDirectTCPIP) mSession.openChannel("direct-tcpip");
-//                mChannel.setHost(remoteAddress);
-//                mChannel.setPort(remotePort);
-//                PipedOutputStream out = new PipedOutputStream();
-//                PipedInputStream selfIn = new PipedInputStream(out,Packet.MAX_SIZE);
-//                PipedOutputStream selfOut = new PipedOutputStream();
-//                PipedInputStream in = new PipedInputStream(selfOut,Packet.MAX_SIZE);
-//                mChannel.setOutputStream(out,true);
-//                mChannel.setInputStream(in,true);
-//                setRemoteIn(selfIn);
-//                setRemoteOut(selfOut);
-//                mChannel.connect(15000);
-//            } catch (Exception e) {
-//                stop();
-//                throw new RemoteConnectionException(e);
-//            }
-//        }
 
         @Override
         public void stop() throws RemoteConnectionException {
@@ -238,4 +269,5 @@ public class JschRemoteConnection extends RemoteConnection {
             return mSocket.isConnected();
         }
     }
+
 }

@@ -1,9 +1,14 @@
 package ir.smartdevelopers.smarttunnel.ui.fragments;
 
 import android.os.Bundle;
+import android.text.InputFilter;
+import android.text.InputType;
+import android.text.Spanned;
+import android.text.method.PasswordTransformationMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
@@ -33,6 +38,18 @@ public class DNSFragment extends Fragment {
     }
 
     private void initViews() {
+        mBinding.edtDns1.setTransformationMethod(new NumericTransformation());
+        mBinding.edtDns1.setInputType(InputType.TYPE_NUMBER_VARIATION_NORMAL|InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        mBinding.edtDns2.setInputType(InputType.TYPE_NUMBER_VARIATION_NORMAL|InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        mBinding.edtDns2.setTransformationMethod(new NumericTransformation());
+        InputFilter filter = new InputFilter() {
+            @Override
+            public CharSequence filter(CharSequence source, int start, int end, Spanned dest, int dstart, int dend) {
+                return source;
+            }
+        };
+        mBinding.edtDns2.setFilters(new InputFilter[]{filter});
+        mBinding.edtDns1.setFilters(new InputFilter[]{filter});
         requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(), new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
@@ -101,6 +118,12 @@ public class DNSFragment extends Fragment {
                    PrefsUtil.setDNS2(requireContext(),"");
                }
            }
+       }
+   }
+   class NumericTransformation extends PasswordTransformationMethod{
+       @Override
+       public CharSequence getTransformation(CharSequence source, View view) {
+           return source;
        }
    }
 }

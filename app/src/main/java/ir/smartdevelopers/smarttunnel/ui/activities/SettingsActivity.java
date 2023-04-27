@@ -8,11 +8,14 @@ import androidx.fragment.app.FragmentTransaction;
 import android.os.Bundle;
 import android.view.MenuItem;
 
+import com.google.android.material.appbar.AppBarLayout;
+
 import ir.smartdevelopers.smarttunnel.R;
 import ir.smartdevelopers.smarttunnel.ui.fragments.DNSFragment;
 import ir.smartdevelopers.smarttunnel.ui.fragments.ProxyFragment;
 import ir.smartdevelopers.smarttunnel.ui.fragments.SettingsFragment;
 import ir.smartdevelopers.smarttunnel.ui.interfaces.Savable;
+import ir.smartdevelopers.smarttunnel.ui.utils.Util;
 
 public class SettingsActivity extends AppCompatActivity {
 
@@ -21,6 +24,9 @@ public class SettingsActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
+        AppBarLayout appBarLayout = findViewById(R.id.appbar);
+        Util.setStatusBarPaddingToView(appBarLayout);
+
         mToolbar = findViewById(R.id.toolbar);
         mToolbar.setOnMenuItemClickListener(item -> {
             if (item.getItemId() == R.id.action_save){
@@ -74,5 +80,12 @@ public class SettingsActivity extends AppCompatActivity {
                 .addToBackStack("proxy_fragment")
                 .replace(R.id.settingsFragmentContainer,new ProxyFragment())
                 .commit();
+    }
+
+    @Override
+    public void onBackPressed() {
+        mToolbar.setTitle(R.string.settings);
+        showSaveMenu(false);
+        super.onBackPressed();
     }
 }

@@ -1,54 +1,111 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="Theme.SmartTunnel" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.SmartTunnel" parent="Theme.MaterialComponents.Light.NoActionBar">
         <!-- Primary brand color. -->
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryVariant">@color/colorPrimaryVariant</item>
-        <item name="colorOnPrimary">@color/colorPrimaryText</item>
-        <item name="android:textColorPrimary">@color/colorPrimaryText</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="android:textColorPrimary">@color/white</item>
+        <item name="android:textColorSecondary">@color/textColorSecondary</item>
+        <item name="android:textColor">@color/white</item>
         <!-- Secondary brand color. -->
         <item name="colorSecondary">@color/colorSecondary</item>
         <item name="colorSecondaryVariant">@color/colorSecondaryVariant</item>
         <item name="colorOnSecondary">@color/white</item>
-        <!-- Status bar color. -->
-        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
+        <item name="android:windowTranslucentStatus">true</item>
         <!-- Customize your theme here. -->
-        <item name="textInputStyle">@style/Theme.FakeSMS.EditTextStyle</item>
+        <item name="textInputStyle">@style/Theme.SmartTunnel.EditTextStyle</item>
         <item name="appBarLayoutStyle">@style/AppBarLayoutStyle</item>
         <item name="toolbarStyle">@style/ToolbarLayoutStyle</item>
         <item name="materialButtonStyle">@style/ButtonsStyle</item>
+        <item name="checkboxStyle">@style/CheckBoxStyle</item>
+        <item name="bottomNavigationStyle">@style/BottomNavStyle</item>
+        <item name="tabStyle">@style/TabStyle</item>
+        <item name="radioButtonStyle">@style/RadioButtonStyleNormalTheme</item>
         <item name="android:windowBackground">@color/colorWindowBackground</item>
-        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:listDivider">@drawable/list_divider</item>
+        <item name="android:colorControlHighlight">@color/text_button_ripple_color</item>
+        <item name="colorControlHighlight">@color/colorHighlight</item>
+        <item name="android:navigationBarColor">@color/black</item>
     </style>
 
-    <style name="AppBarLayoutStyle" parent="Widget.MaterialComponents.AppBarLayout.Surface">
-        <item name="background">@color/white</item>
-        <item name="colorPrimary">@color/white</item>
+    <style name="AppBarLayoutStyle" parent="Widget.MaterialComponents.AppBarLayout.Primary">
+        <item name="android:background">@color/colorToolbar</item>
     </style>
-    <style name="ToolbarLayoutStyle" parent="Widget.MaterialComponents.Toolbar.Surface">
-        <item name="background">@color/white</item>
-        <item name="colorPrimary">@color/white</item>
-        <item name="titleTextColor">@color/colorPrimaryText</item>
+    <style name="ToolbarLayoutStyle" parent="Widget.MaterialComponents.Toolbar.Primary">
+        <item name="android:background">@color/colorToolbar</item>
+        <item name="titleTextColor">@color/white</item>
+        <item name="colorOnPrimary">@color/white</item>
+
+    </style>
+
+    <style name="TextAppearanceListItem">
+        <item name="android:textColor">@color/colorError</item>
     </style>
     <style name="ButtonsStyle" parent="Widget.MaterialComponents.Button">
         <item name="backgroundTint">@color/color_buttons</item>
-        <item name="android:textColor">@color/white</item>
+        <item name="android:textColor">@color/color_primary_text</item>
+        <item name="strokeColor">@color/button_stroke_color</item>
+        <item name="strokeWidth">1dp</item>
         <item name="cornerFamily">rounded</item>
         <item name="cornerRadius">20dp</item>
     </style>
-    <style name="Theme.FakeSMS.EditTextStyle" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-        <item name="colorPrimary">@color/colorSecondary</item>
-        <item name="boxBackgroundColor">@color/white</item>
-        <item name="hintEnabled">false</item>
-    </style>
-    <style name="BottomNavTextAppearanceActive" >
+    <style name="TextButtonsStyle" parent="Widget.MaterialComponents.Button.TextButton">
         <item name="android:textColor">@color/colorActiveText</item>
-        <item name="colorOnSecondary">@color/colorActiveText</item>
-        <item name="colorPrimary">@color/colorActiveText</item>
+        <item name="strokeColor">@null</item>
+        <item name="strokeWidth">0dp</item>
+        <item name="cornerFamily">cut</item>
+        <item name="cornerRadius">0dp</item>
+        <item name="rippleColor">@color/text_button_ripple_color</item>
+    </style>
+
+    <style name="TabStyle" parent="Widget.MaterialComponents.TabLayout.Colored">
+        <item name="android:background">@color/colorToolbar</item>
+        <item name="tabTextColor">@color/color_tab_text</item>
+        <item name="android:minHeight">?attr/actionBarSize</item>
+    </style>
+    <style name="CheckBoxStyle" parent="Widget.MaterialComponents.CompoundButton.CheckBox">
+        <item name="android:textColor">@color/color_primary_text</item>
+        <item name="buttonTint">@color/color_compund_button</item>
+    </style>
+
+    <style name="Theme.SmartTunnel.EditTextStyle" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item name="boxBackgroundColor">@color/color_edit_text_bg</item>
+        <item name="hintEnabled">false</item>
+        <item name="boxStrokeColor">@color/input_box_stroke_color</item>
+        <item name="boxStrokeWidth">1dp</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearanceRound25</item>
+        <item name="materialThemeOverlay">@style/TextInputThemeOverlay</item>
+        <item name="colorPrimary">@color/white</item>
+        <item name="errorTextColor">@color/colorError</item>
+        <item name="boxStrokeErrorColor">@color/colorError</item>
+        <item name="errorIconTint">@color/colorError</item>
+    </style>
+
+    <style name="TextInputThemeOverlay" parent="ThemeOverlay.MaterialComponents.TextInputEditText.OutlinedBox">
+        <item name="editTextStyle">@style/EditTextStyle</item>
+        <item name="colorPrimary">@color/white</item>
 
     </style>
-    <style name="RadioButtonStyle">
+    <style name="EditTextStyle" parent="Base.Widget.MaterialComponents.TextInputEditText">
+        <item name="android:textColor">@color/color_edittext_text</item>
+        <item name="android:textColorHint">@color/colorHint</item>
+    </style>
+    <style name="BottomNavStyle" parent="Widget.MaterialComponents.BottomNavigationView.Colored">
+        <item name="itemTextColor">@color/color_nav_icon</item>
+        <item name="android:background">@color/colorToolbar</item>
+        <item name="itemIconTint">@color/color_nav_icon</item>
+    </style>
+    <style name="RadioButtonStyle" >
         <item name="android:layoutDirection">rtl</item>
     </style>
+    <style name="RadioButtonStyleNormalTheme" parent="Widget.MaterialComponents.CompoundButton.RadioButton">
+        <item name="android:textColor">@color/color_primary_text</item>
+        <item name="buttonTint">@color/color_primary_text</item>
+    </style>
 
+    <style name="ShapeAppearanceRound25" parent="ShapeAppearance.MaterialComponents.MediumComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">8dp</item>
+    </style>
 </resources>

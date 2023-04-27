@@ -22,14 +22,14 @@ public class Tun2SocksChannelManager extends ChannelManager {
     private final ConcurrentHashMap<String,Channel> mChannels;
     private final ConcurrentHashMap<String,Thread> mThreads;
     private int udpgwPort;
-    private HttpProxy mProxy;
 
-    public Tun2SocksChannelManager(RemoteConnection remoteConnection, HttpProxy proxy, int udpgwPort) {
+
+    public Tun2SocksChannelManager(RemoteConnection remoteConnection, int udpgwPort) {
         mRemoteConnection = remoteConnection;
         mChannels = new ConcurrentHashMap<>();
         mThreads = new ConcurrentHashMap<>();
         this.udpgwPort = udpgwPort;
-        mProxy = proxy;
+
     }
 
     public  void sendToRemoteServer(Packet packet) {
@@ -58,7 +58,7 @@ public class Tun2SocksChannelManager extends ChannelManager {
                     if (((TCP) pk.getTransmissionProtocol()).getFlag().SYN == 0 ){
                         return;
                     }
-                    channel = new Tun2SocksChannel(mProxy,channelId, pk,mRemoteConnection,this);
+                    channel = new Tun2SocksChannel(channelId, pk,this);
                 }else if (pk.getTransmissionProtocol() instanceof UDP && ByteUtil.getIntValue(pk.getDestPort()) == 53){
                     channel = new DNSChannel(channelId,pk,mRemoteConnection,this);
                 } else if (pk.getTransmissionProtocol() instanceof UDP) {

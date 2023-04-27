@@ -10,7 +10,7 @@
     android:layout_width="10dp"
     android:layout_height="match_parent"
     android:id="@+id/activeSign"
-    android:background="@color/colorSecondary"
+    android:background="#2CDBBE"
     />
    <LinearLayout
        android:layout_width="0dp"

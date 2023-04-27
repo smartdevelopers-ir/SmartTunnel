@@ -1,12 +1,17 @@
 package ir.smartdevelopers.smarttunnel.ui.models;
 
+import android.os.ParcelFileDescriptor;
 import android.text.TextUtils;
 
 import com.jcraft.jsch.HostKeyRepository;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.Socket;
 import java.util.UUID;
 
+import ir.smartdevelopers.smarttunnel.MyVpnService;
 import ir.smartdevelopers.smarttunnel.channels.JschRemoteConnection;
 import ir.smartdevelopers.smarttunnel.channels.RemoteConnection;
 import ir.smartdevelopers.smarttunnel.exceptions.RemoteConnectionException;
@@ -15,6 +20,7 @@ import ir.smartdevelopers.smarttunnel.managers.PacketManager;
 import ir.smartdevelopers.smarttunnel.managers.SshChannelManager;
 import ir.smartdevelopers.smarttunnel.packet.Packet;
 import ir.smartdevelopers.smarttunnel.ui.classes.AcceptAllHostRepo;
+import ir.smartdevelopers.smarttunnel.ui.classes.LocalReader;
 import ir.smartdevelopers.smarttunnel.ui.exceptions.ConfigException;
 
 public class SSHConfig extends Config {
@@ -54,6 +60,10 @@ public class SSHConfig extends Config {
     private transient RemoteConnection mRemoteConnection;
     private transient PacketManager mPacketManager;
     private transient boolean mCanceled;
+    private transient FileInputStream mLocalIn;
+    private transient FileOutputStream mLocalOut;
+    private transient LocalReader mLocalReader;
+
 
     private SSHConfig(String name, String id, String type) {
         super(name, id, type);
@@ -119,7 +129,8 @@ public class SSHConfig extends Config {
                     }
                 }
             }
-            JschRemoteConnection connection = new JschRemoteConnection(proxifiedAddress,proxifiedPort,mUsername,mPassword);
+            JschRemoteConnection connection = new JschRemoteConnection(proxifiedAddress,proxifiedPort,mUsername,mPassword,
+                    isServerAddressLocked(), isServerPortLocked(), isUsernameLocked());
             connection.setPrivateKey(privateKey);
             mRemoteConnection = connection;
             if (getProxy() instanceof HttpProxy) {
@@ -157,11 +168,53 @@ public class SSHConfig extends Config {
     }
 
     @Override
+    public void setFileDescriptor(ParcelFileDescriptor fileDescriptor) {
+        super.setFileDescriptor(fileDescriptor);
+        mLocalIn = new FileInputStream(fileDescriptor.getFileDescriptor());
+        mLocalOut = new FileOutputStream(fileDescriptor.getFileDescriptor());
+        mLocalReader = new LocalReader(mLocalIn,this,mPacketManager);
+        mLocalReader.start();
+    }
+
+    @Override
+    public ParcelFileDescriptor getFileDescriptor() {
+        return null;
+    }
+
+    @Override
     public Socket getMainSocket() {
 
         return mRemoteConnection.getMainSocket();
     }
 
+    @Override
+    public void retry() {
+        if (mVpnService != null){
+            MyVpnService.reconnect(mVpnService.getApplicationContext());
+        }
+    }
+
+    @Override
+    public void cancel() {
+        mCanceled = true;
+        if (mPacketManager != null) {
+            mPacketManager.destroy();
+        }
+        if (mRemoteConnection != null) {
+            mRemoteConnection.disconnect();
+        }
+        if (mJumper != null) {
+            mJumper.getSSHConfig().cancel();
+        }
+        if (mLocalReader != null){
+            mLocalReader.interrupt();
+        }
+    }
+
+
+    public RemoteConnection getRemoteConnection() {
+        return mRemoteConnection;
+    }
 
     public String getServerAddress() {
         return mServerAddress;
@@ -259,32 +312,8 @@ public class SSHConfig extends Config {
         mHostKeyRepo = hostKeyRepo;
     }
 
-    @Override
-    public void retry() {
-
-    }
-
-    @Override
-    public void cancel() {
-        mCanceled = true;
-        if (mPacketManager != null) {
-            mPacketManager.destroy();
-        }
-        if (mRemoteConnection != null) {
-            mRemoteConnection.disconnect();
-        }
-        if (mJumper != null) {
-            mJumper.getSSHConfig().cancel();
-        }
-    }
-
     public boolean isCanceled() {
         return mCanceled;
-    }
-
-    @Override
-    public void sendPacketToRemoteServer(byte[] packet) {
-        mPacketManager.sendToRemoteServer(packet);
     }
 
     public boolean isServerAddressLocked() {
@@ -348,8 +377,12 @@ public class SSHConfig extends Config {
         @Override
         public synchronized void onPacketFromServer(Packet packet) {
 
-            if (mConfig.mOnPacketFromServerListener != null) {
-                mConfig.mOnPacketFromServerListener.onPacketFromServer(packet.getPacketBytes());
+            if (mConfig.mLocalOut!=null){
+                try {
+                    mConfig.mLocalOut.write(packet.getPacketBytes());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
 
         }
@@ -547,10 +580,18 @@ public class SSHConfig extends Config {
                 mUDPGWPort = DEFAULT_UDPGW_PORT;
             }
 
-            return new SSHConfig(name, id, CONFIG_TYPE,
+            SSHConfig config = new SSHConfig(name, id, CONFIG_TYPE,
                     mConfigMode, mServerAddress, mServerPort, mUsername,
                     mPassword, mUsePrivateKey, mPrivateKey, mUDPGWPort,
                     mJumper, mConnectionType, mPayload, mServerNameIndicator);
+            config.passwordLocked = passwordLocked;
+            config.usernameLocked = usernameLocked;
+            config.serverAddressLocked = serverAddressLocked;
+            config.serverPortLocked = serverPortLocked;
+            config.privateKeyLocked = privateKeyLocked;
+            config.connectionModeLocked = connectionModeLocked;
+
+            return config;
 
         }
 
@@ -609,4 +650,5 @@ public class SSHConfig extends Config {
             return this;
         }
     }
+
 }

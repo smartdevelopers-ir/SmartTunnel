@@ -2,6 +2,7 @@ package ir.smartdevelopers.smarttunnel.ui.adapters;
 
 import android.text.TextUtils;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Filter;
 import android.widget.Filterable;
@@ -107,7 +108,13 @@ public class AppsAdapter extends RecyclerView.Adapter<AppsAdapter.AppsViewHolder
             mBinding.txtAppPackageName.setText(model.getPackageName());
             mBinding.chbCheckbox.setChecked(model.isSelected());
             mBinding.chbCheckbox.jumpDrawablesToCurrentState();
-            mBinding.getRoot().setEnabled(model.isEnabled());
+            if (model.isEnabled()){
+                mBinding.getRoot().setEnabled(true);
+                mBinding.getRoot().setAlpha(1f);
+            }else {
+                mBinding.getRoot().setEnabled(false);
+                mBinding.getRoot().setAlpha(0.35f);
+            }
             mBinding.getRoot().setOnClickListener(v->{
                 mBinding.chbCheckbox.setChecked(!model.isSelected());
                 model.setSelected(!model.isSelected());

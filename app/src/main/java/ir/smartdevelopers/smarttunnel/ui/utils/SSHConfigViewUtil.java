@@ -54,14 +54,14 @@ public class SSHConfigViewUtil {
         if (mBuilder.isServerAddressLocked()){
             mBinding.edtServerAddressLayout.setEnabled(false);
             mBinding.edtServerAddress.setEnabled(false);
-            mBinding.edtServerAddressLayout.setHint(mBinding.getRoot().getContext().getString(R.string.server_is_locked));
+            mBinding.edtServerAddress.setHint(mBinding.getRoot().getContext().getString(R.string.server_is_locked));
         }else {
             mBinding.edtServerAddress.setText(mBuilder.getServerAddress());
         }
         if (mBuilder.isServerPortLocked()){
             mBinding.edtServerPortLayout.setEnabled(false);
             mBinding.edtServerPort.setEnabled(false);
-            mBinding.edtServerPortLayout.setHint(mBinding.getRoot().getContext().getString(R.string.server_port_is_locked));
+            mBinding.edtServerPort.setHint(mBinding.getRoot().getContext().getString(R.string.server_port_is_locked));
         }else {
             mBinding.edtServerPort.setText(mBuilder.getServerPort() == 0 ? "" :
                     String.valueOf(mBuilder.getServerPort()));
@@ -69,14 +69,14 @@ public class SSHConfigViewUtil {
         if (mBuilder.isUsernameLocked()){
             mBinding.edtUsernameLayout.setEnabled(false);
             mBinding.edtUsername.setEnabled(false);
-            mBinding.edtUsernameLayout.setHint(mBinding.getRoot().getContext().getString(R.string.username_is_locked));
+            mBinding.edtUsername.setHint(mBinding.getRoot().getContext().getString(R.string.username_is_locked));
         }else {
             mBinding.edtUsername.setText(mBuilder.getUsername());
         }
         if (mBuilder.isPasswordLocked()){
             mBinding.edtPasswordLayout.setEnabled(false);
             mBinding.edtPassword.setEnabled(false);
-            mBinding.edtPasswordLayout.setHint(mBinding.getRoot().getContext().getString(R.string.password_is_locked));
+            mBinding.edtPassword.setHint(mBinding.getRoot().getContext().getString(R.string.password_is_locked));
         }else {
             mBinding.edtPassword.setText(mBuilder.getPassword());
         }

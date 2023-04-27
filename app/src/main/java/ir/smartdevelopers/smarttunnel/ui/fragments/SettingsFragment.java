@@ -1,8 +1,11 @@
 package ir.smartdevelopers.smarttunnel.ui.fragments;
 
 import android.os.Bundle;
+import android.view.View;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 
@@ -20,10 +23,16 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         initViews();
     }
 
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        setDivider(ContextCompat.getDrawable(requireContext(),R.drawable.list_divider));
+
+    }
+
     private void initViews() {
         mProxyPrefs = findPreference(getString(R.string.key_proxy));
         mDNSPrefs = findPreference(getString(R.string.key_dns));
-
 
         mDNSPrefs.setSummary(PrefsUtil.getDNSName(requireContext()));
 

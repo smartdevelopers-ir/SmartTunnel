@@ -25,23 +25,23 @@
             android:layout_gravity="center_vertical"
             android:layout_marginStart="16dp"
             />
-        <Button
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/btnExport"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/export"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:textColor="#0B5906"
+            style="@style/TextButtonsStyle"
+            android:textColor="@color/colorActiveText"
             android:textAllCaps="false"
             android:layout_gravity="center_vertical"
             />
-        <Button
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/btnSave"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/save"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:textColor="#0B5906"
+            style="@style/TextButtonsStyle"
+            android:textColor="@color/colorActiveText"
             android:textAllCaps="false"
             android:layout_gravity="center_vertical"
             />

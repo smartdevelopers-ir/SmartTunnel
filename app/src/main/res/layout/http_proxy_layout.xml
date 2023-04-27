@@ -29,7 +29,6 @@
             android:id="@+id/edtServerAddress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="14sp"
             android:inputType="textWebEditText"
             android:paddingTop="12dp"
             />
@@ -59,7 +58,6 @@
             android:id="@+id/edtServerPort"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="14sp"
             android:inputType="numberDecimal"
             android:paddingTop="12dp"
             />

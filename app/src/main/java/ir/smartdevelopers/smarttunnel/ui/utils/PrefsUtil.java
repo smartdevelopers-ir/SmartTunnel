@@ -4,17 +4,22 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
 
+import androidx.preference.PreferenceManager;
+
 import com.google.gson.Gson;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import ir.smartdevelopers.smarttunnel.R;
 import ir.smartdevelopers.smarttunnel.ui.models.ConfigListModel;
+import ir.smartdevelopers.smarttunnel.ui.models.LogItem;
 import ir.smartdevelopers.smarttunnel.ui.models.ProxyType;
 
 public class PrefsUtil {
@@ -50,6 +55,9 @@ public class PrefsUtil {
             configsList.add(newModelJson);
         }
         prefs.edit().putStringSet(ConfigListModel.PREFS_NAME,new HashSet<>(configsList)).apply();
+        if (model.isSelected()){
+            setSelectedConfig(context,model);
+        }
     }
     public static void deleteConfig(Context context,ConfigListModel model){
         SharedPreferences prefs = getGeneralPrefs(context);
@@ -85,6 +93,42 @@ public class PrefsUtil {
         }
         Collections.sort(configs);
         return configs;
+    }
+    public static void addLog(Context context, LogItem... logItems){
+        List<LogItem> currentLogs = getLogs(context);
+        currentLogs.addAll(Arrays.asList(logItems));
+        if (currentLogs.size() > LogItem.MAX_LOG_CACHE_SIZE){
+            currentLogs.removeAll(currentLogs.subList(0,logItems.length));
+        }
+        SharedPreferences preferences = context.getSharedPreferences("logs",Context.MODE_PRIVATE);
+        Set<String> logsJson = new HashSet<>();
+        Gson gson = new Gson();
+        for (LogItem item : currentLogs){
+            logsJson.add(gson.toJson(item));
+        }
+        preferences.edit().putStringSet("log_items",logsJson).apply();
+    }
+    public static List<LogItem> getLogs(Context context){
+        SharedPreferences preferences = context.getSharedPreferences("logs",Context.MODE_PRIVATE);
+        List<String> currentLogsJson = new ArrayList<>(preferences.getStringSet("log_items",Collections.emptySet()));
+        List<LogItem> logItems = new ArrayList<>();
+        for (String json : currentLogsJson){
+            LogItem item = LogItem.fromJson(json);
+            if (item != null) {
+                logItems.add(item);
+            }
+        }
+        Collections.sort(logItems, new Comparator<LogItem>() {
+            @Override
+            public int compare(LogItem o1, LogItem o2) {
+                return Long.compare(o1.timeStamp,o2.timeStamp);
+            }
+        });
+        return logItems;
+    }
+    public static void clearLogs(Context context){
+        SharedPreferences preferences = context.getSharedPreferences("logs",Context.MODE_PRIVATE);
+        preferences.edit().clear().apply();
     }
     public static SharedPreferences getGeneralPrefs(Context context){
         return context.getSharedPreferences(APP_PREFS_NAME,Context.MODE_PRIVATE);
@@ -159,5 +203,8 @@ public class PrefsUtil {
     }
     public static String getConfigFilesDirectoryPath(Context context){
         return getGeneralPrefs(context).getString("config_directory_path",null);
+    }
+    public static boolean isConnectionSoundEnabled(Context context){
+        return PreferenceManager.getDefaultSharedPreferences(context).getBoolean(context.getString(R.string.key_connection_sound),false);
     }
 }

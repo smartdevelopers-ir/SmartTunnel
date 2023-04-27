@@ -1,5 +1,7 @@
 package ir.smartdevelopers.smarttunnel.channels;
 
+import android.util.Log;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -20,7 +22,6 @@ import ir.smartdevelopers.smarttunnel.utils.Logger;
 
 public abstract class ChannelV4TCP extends Channel implements TCPController.TcpListener {
 
-    protected RemoteConnection mRemoteConnection;
     /**
      * We read every thing remote sends to us from this inputStream.
      */
@@ -42,12 +43,11 @@ public abstract class ChannelV4TCP extends Channel implements TCPController.TcpL
     /** This is IP header identification, we must increase by 1 for every packet sent to client */
     private short mIpIdentification;
 
-    public ChannelV4TCP(String id, PacketV4 packetV4, RemoteConnection remoteConnection, ChannelManager channelManager) {
+    public ChannelV4TCP(String id, PacketV4 packetV4,  ChannelManager channelManager) {
         super(id, packetV4.getTransmissionProtocol().getSourcePort()
                 , packetV4.getTransmissionProtocol().getDestPort()
                 , packetV4.getIPHeader().getSourceAddress()
                 , packetV4.getIPHeader().getDestAddress());
-        mRemoteConnection = remoteConnection;
         mChannelManager = channelManager;
         mInitialPacket = packetV4;
         mTCPController = new TCPController(packetV4, new TcpPacketCreator(), id, this);
@@ -113,7 +113,7 @@ public abstract class ChannelV4TCP extends Channel implements TCPController.TcpL
 
                     if (pkw.getPacket().getData() != null && pkw.getPacket().getData().length > 0) {
                         try {
-
+                            Logger.logPacket("toRemote",pkw.getPacket());
                             mRemoteOut.write(pkw.getPacket().getData());
                             if (pkw.isPush()) {
                                 mRemoteOut.flush();
@@ -133,7 +133,18 @@ public abstract class ChannelV4TCP extends Channel implements TCPController.TcpL
             }
 
         } catch (Exception e) {
-            Logger.logDebug(e.getMessage());
+            String message;
+            Throwable t = null;
+            while (true){
+                t = e.getCause();
+                if (t != null){
+                    if (t.getMessage() != null){
+                        message = t.getMessage();
+                       break;
+                    }
+                }
+            }
+            Logger.logError(message);
         }
 
 

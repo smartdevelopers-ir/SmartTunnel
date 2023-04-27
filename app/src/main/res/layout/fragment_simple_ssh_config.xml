@@ -28,17 +28,14 @@
         android:layout_marginStart="16dp"
         android:layout_marginEnd="24dp"
         android:layout_marginTop="8dp"
-        app:boxBackgroundMode="outline"
-        app:boxBackgroundColor="@color/white"
-        app:hintEnabled="false"
         >
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/edtConfigName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="14sp"
             android:inputType="text"
             android:paddingTop="12dp"
+            android:text="asdasd"
             />
     </com.google.android.material.textfield.TextInputLayout>
     <include android:id="@+id/sshConfig"

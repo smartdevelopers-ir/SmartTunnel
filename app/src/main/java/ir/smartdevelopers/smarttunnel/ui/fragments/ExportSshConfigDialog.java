@@ -39,10 +39,12 @@ import ir.smartdevelopers.smarttunnel.ui.utils.ConfigsUtil;
 import ir.smartdevelopers.smarttunnel.ui.utils.PrefsUtil;
 import ir.smartdevelopers.smarttunnel.ui.utils.Util;
 import ir.smartdevelopers.smarttunnel.ui.viewModels.AddSSHConfigViewModel;
+import ir.smartdevelopers.smarttunnel.ui.viewModels.SshConfigVieModel;
 
 public class ExportSshConfigDialog extends Fragment {
     private DialogSshConfigExportBinding mBinding;
     private AddSSHConfigViewModel mViewModel;
+    private SshConfigVieModel mSshConfigVieModel;
 
     private ActivityResultLauncher<Uri> directoryPicker = registerForActivityResult(new ActivityResultContracts.OpenDocumentTree(), new ActivityResultCallback<Uri>() {
         @Override
@@ -73,10 +75,12 @@ public class ExportSshConfigDialog extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         mViewModel = new ViewModelProvider(requireActivity()).get(AddSSHConfigViewModel.class);
+        mSshConfigVieModel = new ViewModelProvider(requireActivity()).get(SshConfigVieModel.class);
         initViews();
     }
 
     private void initViews() {
+        Util.setStatusBarPaddingToView(mBinding.appbar);
         mBinding.toolbar.setOnMenuItemClickListener(item -> {
             if (item.getItemId() == R.id.action_save) {
                 exportConfig();
@@ -193,7 +197,7 @@ public class ExportSshConfigDialog extends Fragment {
      * Before calling this, call checkConfig
      */
     private SSHConfig generateConfig() {
-        SSHConfig.Builder builder = mViewModel.getSSHConfigBuilder();
+        SSHConfig.Builder builder = mSshConfigVieModel.getSSHConfigBuilder();
         if (builder.getConnectionType() == SSHConfig.CONNECTION_TYPE_SSH_PROXY) {
             SSHProxy jumper = new SSHProxy(mViewModel.getJumperConfigBuilder().build());
             builder.setJumper(jumper);

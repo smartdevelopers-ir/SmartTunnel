@@ -33,6 +33,7 @@ import ir.smartdevelopers.smarttunnel.ui.adapters.AppsAdapter;
 import ir.smartdevelopers.smarttunnel.ui.interfaces.OnCompleteListener;
 import ir.smartdevelopers.smarttunnel.ui.models.AppModel;
 import ir.smartdevelopers.smarttunnel.ui.utils.PrefsUtil;
+import ir.smartdevelopers.smarttunnel.ui.utils.Util;
 
 public class AppsFragment extends Fragment {
 
@@ -79,6 +80,7 @@ public class AppsFragment extends Fragment {
                 PrefsUtil.setSelectedApps(requireContext(),selectedApps);
             }
         };
+
     }
 
     private void enableRadios(boolean enable){
@@ -87,6 +89,7 @@ public class AppsFragment extends Fragment {
     }
 
     private void initViews() {
+        Util.setStatusBarPaddingToView(mBinding.appbar);
         requireActivity().getOnBackPressedDispatcher().addCallback(getViewLifecycleOwner(),
                 new OnBackPressedCallback(true) {
             @Override
@@ -188,6 +191,10 @@ public class AppsFragment extends Fragment {
                     // we must unselect forbidden apps
                     if (!enabled){
                         selected = false;
+                    }
+                }else {
+                    if (!enabled){
+                        selected = true;
                     }
                 }
                 AppModel model = new AppModel(

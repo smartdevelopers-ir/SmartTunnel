@@ -1,25 +1,23 @@
 package ir.smartdevelopers.smarttunnel.ui.models;
 
-import androidx.annotation.CallSuper;
+import android.os.ParcelFileDescriptor;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
+import com.google.gson.Gson;
+
 import java.net.Socket;
 
-import ir.smartdevelopers.smarttunnel.packet.Packet;
+import ir.smartdevelopers.smarttunnel.MyVpnService;
 import ir.smartdevelopers.smarttunnel.ui.exceptions.ConfigException;
 
 public abstract class Config {
-    private final String mName;
-    private final String id;
-    private final String type;
+    private String mName;
+    private String id;
+    private String type;
     private String mNote;
     private Proxy mProxy;
-   protected OnPacketFromServerListener mOnPacketFromServerListener;
-
+    protected  State mState ;
+   protected transient ParcelFileDescriptor mFileDescriptor;
+    protected transient MyVpnService mVpnService;
 
     public Config(String name, String id, String type)  {
         mName = name;
@@ -27,7 +25,9 @@ public abstract class Config {
         this.type = type;
 
     }
-
+    public enum State {
+        CONNECTED,DISCONNECTED,DISCONNECTING,CONNECTING,RECONNECTING,WAITING_FOR_NETWORK
+    }
     public abstract void connect() throws ConfigException;
     public abstract Socket getMainSocket();
 
@@ -63,13 +63,14 @@ public abstract class Config {
         mNote = note;
         return this;
     }
-    public abstract void sendPacketToRemoteServer(byte[] packet);
 
-    public void setOnPacketFromServerListener(OnPacketFromServerListener onPacketFromServerListener) {
-        mOnPacketFromServerListener = onPacketFromServerListener;
+    public void setFileDescriptor(ParcelFileDescriptor fileDescriptor) {
+        mFileDescriptor = fileDescriptor;
     }
 
-    public interface OnPacketFromServerListener{
-        void onPacketFromServer(byte[] packet);
+    public abstract ParcelFileDescriptor getFileDescriptor();
+
+    public void setVpnService(MyVpnService vpnService) {
+        mVpnService = vpnService;
     }
 }

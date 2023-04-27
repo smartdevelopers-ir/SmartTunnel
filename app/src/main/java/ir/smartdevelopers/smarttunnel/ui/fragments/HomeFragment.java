@@ -27,6 +27,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.text.HtmlCompat;
 import androidx.fragment.app.Fragment;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
@@ -39,6 +40,7 @@ import ir.smartdevelopers.smarttunnel.databinding.FragmentHomeBinding;
 import ir.smartdevelopers.smarttunnel.ui.activities.SettingsActivity;
 import ir.smartdevelopers.smarttunnel.ui.models.ConfigListModel;
 import ir.smartdevelopers.smarttunnel.ui.utils.PrefsUtil;
+import ir.smartdevelopers.smarttunnel.ui.utils.Util;
 
 public class HomeFragment extends Fragment {
     private FragmentHomeBinding mBinding;
@@ -159,8 +161,14 @@ public class HomeFragment extends Fragment {
 
         ConfigListModel currentConfig = PrefsUtil.getSelectedConfig(requireContext());
         if (currentConfig != null && !TextUtils.isEmpty(currentConfig.note)){
-            mBinding.txtConnectionNote.setText(currentConfig.note);
+            CharSequence note = HtmlCompat.fromHtml(currentConfig.note,HtmlCompat.FROM_HTML_MODE_COMPACT);
+            mBinding.txtConfigNote.setText(note);
+            mBinding.noteGroup.setVisibility(View.VISIBLE);
+        }else {
+            mBinding.noteGroup.setVisibility(View.GONE);
         }
+        Util.setStatusBarMargin(mBinding.toolbar);
+
 
     }
 
@@ -188,13 +196,13 @@ public class HomeFragment extends Fragment {
             return;
         }
         startConnectingAnimation();
-        mBinding.txtConnectionNote.setTextColor(R.string.connecting_);
+        mBinding.txtConnectionNote.setText(R.string.connecting_);
     }
     private void onConnect(){
         mBinding.btnConnectBorder.setTag("connected");
         mBinding.btnConnect.setBackgroundResource(R.drawable.btn_connect_active);
         mBinding.btnConnectBorder.setImageLevel(R.drawable.btn_connect_active_border);
-        mBinding.txtConnectionNote.setTextColor(R.string.connected);
+        mBinding.txtConnectionNote.setText(R.string.connected);
     }
 
     private boolean isConnecting() {
@@ -205,13 +213,13 @@ public class HomeFragment extends Fragment {
     }
 
     private void disconnect() {
-        MyVpnService.disconnect(requireContext());
+        MyVpnService.disconnect(requireContext(),true);
     }
     private void onDisconnect(){
         mBinding.btnConnectBorder.setTag("disconnected");
         mBinding.btnConnect.setBackgroundResource(R.drawable.btn_connect_inactive);
         mBinding.btnConnectBorder.setImageLevel(R.drawable.btn_connect_inactive_border);
-        mBinding.txtConnectionNote.setTextColor(R.string.tap_to_connect);
+        mBinding.txtConnectionNote.setText(R.string.tap_to_connect);
     }
 
     private boolean isConnected() {

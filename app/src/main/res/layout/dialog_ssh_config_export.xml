@@ -81,6 +81,7 @@
                     android:inputType="textMultiLine"
                     android:paddingTop="12dp"
                     android:lines="5"
+                    android:gravity="top"
                     />
             </com.google.android.material.textfield.TextInputLayout>
             <com.google.android.material.checkbox.MaterialCheckBox

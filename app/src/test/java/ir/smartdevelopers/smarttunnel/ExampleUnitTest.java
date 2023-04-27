@@ -5,15 +5,32 @@ import org.apache.commons.codec.binary.BinaryCodec;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.Test;
+import org.junit.function.ThrowingRunnable;
 
 import static org.junit.Assert.*;
 
+import android.os.ParcelFileDescriptor;
+
+import androidx.annotation.NonNull;
+
+import com.google.gson.Gson;
+import com.google.gson.InstanceCreator;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.annotations.JsonAdapter;
+
+import java.lang.reflect.Type;
 import java.math.BigInteger;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 
 
 import ir.smartdevelopers.smarttunnel.packet.TCPPacketQueue;
@@ -24,6 +41,10 @@ import ir.smartdevelopers.smarttunnel.packet.TCP;
 import ir.smartdevelopers.smarttunnel.packet.TCPFlag;
 import ir.smartdevelopers.smarttunnel.packet.TCPOption;
 import ir.smartdevelopers.smarttunnel.packet.TCPPacketWrapper;
+import ir.smartdevelopers.smarttunnel.ui.exceptions.ConfigException;
+import ir.smartdevelopers.smarttunnel.ui.exceptions.ConfigNotSupportException;
+import ir.smartdevelopers.smarttunnel.ui.models.Config;
+import ir.smartdevelopers.smarttunnel.ui.models.Tun2SocksConfig;
 import ir.smartdevelopers.smarttunnel.ui.utils.Util;
 import ir.smartdevelopers.smarttunnel.utils.ByteUtil;
 
@@ -65,6 +86,20 @@ public class ExampleUnitTest {
 
     }
     @Test
+    public void intToByteTest(){
+        int a = 200;
+        byte b = (byte) a;
+        int c = b & 0xFF;
+        assertEquals(a,c);
+        assertEquals(String.valueOf(a),String.valueOf(c));
+        long time = System.currentTimeMillis();
+        String s =String.format("%tH:%tM:%tS",time,time,time);
+        System.out.println(s);
+        String m ="1682457105,WAIT,,,,,,";
+        String[] args = m.split(",",8);
+        assertEquals(args.length,8);
+    }
+    @Test
     public void bitToStringTest(){
         byte[] a = {69,96,55};
         BinaryCodec codec = new BinaryCodec();
@@ -94,6 +129,7 @@ public class ExampleUnitTest {
     }
     @Test
     public void byteToInt(){
+
         byte[] a = {20,-113};
         int b= ByteUtil.getIntValue(a);
         assertEquals(5263,b);
@@ -244,6 +280,98 @@ public class ExampleUnitTest {
         flag.ACK = 1;
         assertEquals(flag.toString(),"[ACK][SYN]");
     }
+    @Test
+    public void threadExceptionTest() throws ConfigNotSupportException, InterruptedException {
+        thrException();
+
+    }
+    public void thrException() throws ConfigNotSupportException, InterruptedException {
+        Semaphore semaphore = new Semaphore(0);
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    throw new ConfigNotSupportException();
+                } catch (ConfigNotSupportException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+        t.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(@NonNull Thread t, @NonNull Throwable e) {
+                try {
+                    assertFalse(e.getCause() instanceof ConfigNotSupportException);
+                } finally {
+                    semaphore.release();
+
+                }
+
+            }
+        });
+        t.start();
+        semaphore.acquire();
+    }
+    @Test
+    public void configStateTest(){
+        SimpleConfig config = new SimpleConfig("conf1","id1","test");
+        config.userName = "ali";
+        String confJson = new Gson().toJson(config);
+        SimpleConfig fromJsonConf = new Gson().fromJson(confJson,SimpleConfig.class);
+        assertEquals(fromJsonConf.getName(),"conf1");
+
+        assertEquals(fromJsonConf.userName, "ali");
+    }
+    class SimpleConfigDeserializer implements JsonDeserializer<SimpleConfig>{
+
+        @Override
+        public SimpleConfig deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            JsonObject object = json.getAsJsonObject();
+            SimpleConfig config = context.deserialize(json, typeOfT);
+            return new SimpleConfig(object.get("mName").getAsString(),
+                    object.get("id").getAsString(),object.get("type").getAsString());
+        }
+    }
+
+    @JsonAdapter(SimpleConfigDeserializer.class)
+    class SimpleConfig extends Config {
+
+        public String userName;
+        public SimpleConfig(String name, String id, String type) {
+            super(name, id, type);
+        }
+
+        @Override
+        public void connect() throws ConfigException {
+
+        }
+
+        @Override
+        public Socket getMainSocket() {
+            return null;
+        }
+
+        @Override
+        public void retry() {
+
+        }
+
+        @Override
+        public void cancel() {
+
+        }
+
+        @Override
+        public boolean isCanceled() {
+            return false;
+        }
+
+        @Override
+        public ParcelFileDescriptor getFileDescriptor() {
+            return null;
+        }
+    }
+
     @Test
     public void blockingQueueTest(){
 

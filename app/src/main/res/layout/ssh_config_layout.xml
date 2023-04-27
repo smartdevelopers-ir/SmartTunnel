@@ -30,9 +30,9 @@
             android:id="@+id/edtServerAddress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="14sp"
             android:inputType="textWebEditText"
             android:paddingTop="12dp"
+            tools:hint="asdasdasd"
             />
     </com.google.android.material.textfield.TextInputLayout>
     <TextView
@@ -60,7 +60,6 @@
             android:id="@+id/edtServerPort"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="14sp"
             android:inputType="number"
             android:paddingTop="12dp"
             />
@@ -91,7 +90,6 @@
             android:id="@+id/edtUsername"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="14sp"
             android:inputType="text"
             android:paddingTop="12dp"
             />
@@ -122,35 +120,28 @@
             android:id="@+id/edtPassword"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="14sp"
             android:inputType="textPassword"
             android:paddingTop="12dp"
             />
     </com.google.android.material.textfield.TextInputLayout>
-    <TextView
-        android:id="@+id/txtPrivateKeyLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/edtPasswordLayout"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginStart="16dp"
-        android:text="@string/private_key"
-        android:layout_marginTop="16dp"
-        />
     <com.google.android.material.checkbox.MaterialCheckBox
         android:id="@+id/chbPrivateKey"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toTopOf="@id/txtPrivateKeyLabel"
-        app:layout_constraintBottom_toBottomOf="@id/txtPrivateKeyLabel"
+        app:layout_constraintTop_toBottomOf="@id/edtPasswordLayout"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginEnd="6dp"
+        android:layout_marginEnd="16dp"
+        android:text="@string/private_key"
+        style="@style/RadioButtonStyle"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+
         />
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnPasteKey"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/txtPrivateKeyLabel"
+        app:layout_constraintTop_toBottomOf="@id/chbPrivateKey"
         android:text="@string/paste_key"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@id/btnChooseKey"
@@ -166,13 +157,14 @@
         app:layout_constraintStart_toEndOf="@id/btnPasteKey"
         app:layout_constraintEnd_toEndOf="parent"
         android:enabled="false"
+
         />
     <TextView
         android:id="@+id/txtPrivateKeyNote"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:layout_constraintTop_toBottomOf="@id/btnPasteKey"
-        app:layout_constraintStart_toStartOf="@id/txtPrivateKeyLabel"
+        app:layout_constraintStart_toStartOf="@id/edtPasswordLayout"
         android:layout_marginTop="16dp"
         android:textColor="@color/colorActiveText"
         tools:text="You pasted private key : ADF...EDP"

@@ -4,6 +4,7 @@
     android:layout_height="match_parent"
     xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@drawable/window_bg"
     tools:context=".ui.fragments.HomeFragment">
 
     <androidx.appcompat.widget.Toolbar
@@ -12,6 +13,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:menu="@menu/home_menu"
+        android:background="@null"
+        android:backgroundTint="#00000000"
 
         />
     <androidx.appcompat.widget.AppCompatImageView
@@ -43,19 +46,39 @@
         app:layout_constraintTop_toBottomOf="@id/btnConnect"
         app:layout_constraintStart_toStartOf="@id/btnConnect"
         app:layout_constraintEnd_toEndOf="@id/btnConnect"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="24dp"
+        android:textSize="18sp"
         android:text="@string/tap_to_connect"
         />
-    <TextView
+    <com.google.android.material.divider.MaterialDivider
+        android:id="@+id/divider"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintTop_toBottomOf="@id/txtConnectionNote"
-        android:layout_marginTop="32dp"
+        app:dividerColor="@color/white"
+        android:layout_marginTop="24dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        />
+
+    <TextView
+        android:id="@+id/txtConfigNote"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/divider"
+        android:layout_marginTop="16dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
         tools:text="note"
         />
+    <androidx.constraintlayout.widget.Group
+        android:id="@+id/noteGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:constraint_referenced_ids="txtConfigNote,divider"
+        />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,18 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#1A918E</color>
-    <color name="colorPrimaryDeactivated" >#591A918E</color>
-    <color name="colorPrimaryVariant">#FFFFFF</color>
-    <color name="colorPrimaryText">#062673</color>
+    <color name="colorPrimary">#004a9e</color>
+    <color name="colorPrimaryDeactivated" >#59004A9E</color>
+    <color name="colorPrimaryVariant">#002957</color>
+    <color name="colorPrimaryText">#F8FF2D</color>
     <color name="colorPrimaryTextDeactivated" >#59062673</color>
-    <color name="colorActiveText">#0740FA</color>
+    <color name="colorActiveText">#FFED0C</color>
     <color name="colorSecondary">#1A918E</color>
+    <color name="textColorSecondary">#A6FFFFFF</color>
     <color name="colorSecondaryVariant">#0E4E4C</color>
-    <color name="iconColor">#465B9D</color>
-    <color name="colorDelete">#BE4343</color>
+    <color name="iconColor">#ffffff</color>
+    <color name="iconColorDeselected">#59FFFFFF</color>
+    <color name="colorDelete">#F9B806</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="colorWindowBackground">#F4F5F8</color>
-    <color name="colorError">#B83127</color>
-
+    <color name="colorHint">#B3FFFFFF</color>
+    <color name="colorWindowBackground">#241465</color>
+    <color name="colorError">#FFBA44</color>
+    <color name="colorErrorBg">#AF301A</color>
+    <color name="colorSuccess">#43A047</color>
+    <color name="colorWarning">#BE6B00</color>
+    <color name="colorEditTextBgColor">#40FFFFFF</color>
+    <color name="colorToolbar">#004a9e</color>
+    <color name="colorInputStrokeActive">#12EFE7</color>
+    <color name="item_bg">#1F0D001E</color>
+    <color name="colorHighlight">#D8FFFFFF</color>
 </resources>

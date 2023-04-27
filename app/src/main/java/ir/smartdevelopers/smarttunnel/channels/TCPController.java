@@ -298,8 +298,8 @@ public class TCPController {
                     if (mClientWindowSize == 0){
                         waitIfWindowIsFull();
                     }
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+                } catch (InterruptedException ignore) {
+
                 }
             }
         }
