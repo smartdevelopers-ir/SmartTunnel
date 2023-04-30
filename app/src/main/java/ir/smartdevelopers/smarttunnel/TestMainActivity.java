@@ -9,9 +9,22 @@ import android.util.Log;
 
 import com.sshtools.client.SshClient;
 
+import org.xbill.DNS.DClass;
+import org.xbill.DNS.ExtendedResolver;
+import org.xbill.DNS.Lookup;
+import org.xbill.DNS.Message;
+import org.xbill.DNS.Name;
+import org.xbill.DNS.Record;
+import org.xbill.DNS.Resolver;
+import org.xbill.DNS.Section;
+import org.xbill.DNS.SimpleResolver;
+import org.xbill.DNS.Type;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.Inet6Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.URL;
@@ -41,26 +54,40 @@ public class TestMainActivity extends AppCompatActivity {
 
 
             // DNS
-//            try {
-//                Record record=Record.newRecord(Name.fromString("s4.goolha.tk."), Type.A, DClass.IN);
-//                Message message = Message.newQuery(record);
-//                Resolver r = new SimpleResolver("8.8.8.8");
-//                ExecutorService service=Executors.newSingleThreadExecutor();
-//                service.execute(()->{
-//                    try {
+            try {
+                Record record=Record.newRecord(Name.fromString("s11.goolha.tk."), Type.A, DClass.IN);
+                Record record6=Record.newRecord(Name.fromString("s11.goolha.tk."), Type.AAAA, DClass.IN);
+                Message message = Message.newQuery(record);
+                Message message6 = Message.newQuery(record6);
+
+                Resolver r = new SimpleResolver("8.8.8.8");
+////
+                ExecutorService service=Executors.newSingleThreadExecutor();
+                service.execute(()->{
+                    try {
 //
-//                        Message m=r.send(message);
-//                        String ip =m.getSectionArray(Section.ANSWER)[0].rdataToString();
-//                        Log.d("TTT", "onCreate: ");
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
-//                });
-//
-//
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
+                        Message m=r.send(message);
+                        Message m6 = r.send(message6);
+                        String ip =m.getSectionArray(Section.ANSWER)[0].rdataToString();
+                        String ip6 = m6.getSectionArray(Section.ANSWER)[0].rdataToString();
+                        Log.d("TTT", "onCreate: ");
+//                        Lookup lookup = new Lookup("s6.goolha.tk",Type.AAAA);
+//                        lookup.setResolver(new SimpleResolver("8.8.8.8"));
+//                        Record[] records = lookup.run();
+//                        Log.v("TTT","ssss");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+
+
+
+
+
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             String host = mBinding.edtHost.getText().toString();
             String port = mBinding.edtPort.getText().toString();
             String user = mBinding.edtUser.getText().toString();

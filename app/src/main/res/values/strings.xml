@@ -146,5 +146,7 @@
     <string name="connection_sound_summary">Play sound when VPN connected</string>
     <string name="disconnect">Disconnect</string>
     <string name="reconnect">Reconnect</string>
+    <string name="prefer_ipv6">Prefer IPv6</string>
+    <string name="prefer_ipv6_summary">If checked try using IPv6 first if posible</string>
 
 </resources>

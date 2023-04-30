@@ -49,7 +49,7 @@ public class Tun2SocksConfig extends Config{
     public void connect() throws ConfigException {
         try {
             mRemoteConnection = new JschRemoteConnection(mServerAddress,mServerPort,mUsername,mPassword,
-                    false, false, false);
+                    false, false, false,"8.8.8.8",false);
             mRemoteConnection.setPrivateKey(mPrivateKey);
             mRemoteConnection.connect();
             if (mRemoteConnection.isPortInUse(1080)){

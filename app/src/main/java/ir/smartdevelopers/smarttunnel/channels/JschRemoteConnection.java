@@ -33,6 +33,7 @@ import ir.smartdevelopers.smarttunnel.ui.models.HttpProxy;
 import ir.smartdevelopers.smarttunnel.ui.models.LogItem;
 import ir.smartdevelopers.smarttunnel.ui.models.PrivateKey;
 import ir.smartdevelopers.smarttunnel.ui.models.Proxy;
+import ir.smartdevelopers.smarttunnel.ui.utils.DNSUtil;
 import ir.smartdevelopers.smarttunnel.utils.Logger;
 
 public class JschRemoteConnection extends RemoteConnection {
@@ -46,10 +47,13 @@ public class JschRemoteConnection extends RemoteConnection {
     private boolean isServerNameLocked;
     private boolean isServerPortLocked;
     private boolean isUsernameLocked;
+    private boolean preferIpV6;
+    private String mDNSServer;
 
     public JschRemoteConnection(String serverAddress, int serverPort,
                                 String username, String password,
-                                boolean isServerNameLocked, boolean isServerPortLocked, boolean isUsernameLocked) {
+                                boolean isServerNameLocked, boolean isServerPortLocked,
+                                boolean isUsernameLocked,String DNSServer,boolean preferIpV6) {
         this.serverAddress = serverAddress;
         this.serverPort = serverPort;
         this.username = username;
@@ -58,6 +62,8 @@ public class JschRemoteConnection extends RemoteConnection {
 
         this.isServerPortLocked = isServerPortLocked;
         this.isUsernameLocked = isUsernameLocked;
+        this.preferIpV6= preferIpV6;
+        this.mDNSServer = DNSServer;
     }
 
     @Override
@@ -127,7 +133,11 @@ public class JschRemoteConnection extends RemoteConnection {
                 Logger.logMessage(new LogItem(String.format("Username : %s",username)));
 
             }
-            mSession = jSch.getSession(username, serverAddress, serverPort);
+            Logger.logMessage(new LogItem(String.format("getting host ip via %s DNS server",mDNSServer)));
+            String ip = DNSUtil.getIp(serverAddress,mDNSServer,preferIpV6);
+            String serverAddr = ip == null ? serverAddress : ip;
+            Logger.logDebug("Server address is ="+serverAddr);
+            mSession = jSch.getSession(username, serverAddr, serverPort);
 
 
             if (mProxy instanceof HttpProxy) {

@@ -136,7 +136,8 @@ public class AddOpenVpnConfigActivity extends AppCompatActivity {
                 .setServerPortLocked(builder.isServerPortLocked())
                 .setUsernameLocked(builder.isUsernameLocked())
                 .setPasswordLocked(builder.isPasswordLocked())
-                .setPrivateKeyLocked(builder.isPrivateKeyLocked());
+                .setPrivateKeyLocked(builder.isPrivateKeyLocked())
+                .setPreferIPv6(builder.isPreferIPv6());
         return configBuilder;
     }
 

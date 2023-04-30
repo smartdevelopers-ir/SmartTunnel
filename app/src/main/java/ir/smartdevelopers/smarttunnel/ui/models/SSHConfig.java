@@ -56,6 +56,7 @@ public class SSHConfig extends Config {
     private boolean passwordLocked;
     private boolean privateKeyLocked;
     private boolean connectionModeLocked;
+    private boolean preferIPv6;
     private transient HostKeyRepository mHostKeyRepo;
     private transient RemoteConnection mRemoteConnection;
     private transient PacketManager mPacketManager;
@@ -130,7 +131,7 @@ public class SSHConfig extends Config {
                 }
             }
             JschRemoteConnection connection = new JschRemoteConnection(proxifiedAddress,proxifiedPort,mUsername,mPassword,
-                    isServerAddressLocked(), isServerPortLocked(), isUsernameLocked());
+                    isServerAddressLocked(), isServerPortLocked(), isUsernameLocked(),"8.8.8.8",false);
             connection.setPrivateKey(privateKey);
             mRemoteConnection = connection;
             if (getProxy() instanceof HttpProxy) {
@@ -365,6 +366,15 @@ public class SSHConfig extends Config {
 
     }
 
+    public boolean isPreferIPv6() {
+        return preferIPv6;
+    }
+
+    public SSHConfig setPreferIPv6(boolean preferIPv6) {
+        this.preferIPv6 = preferIPv6;
+        return this;
+    }
+
 
     private static class ServerPacketListener implements PacketManager.ServerPacketListener {
 
@@ -404,7 +414,8 @@ public class SSHConfig extends Config {
                 .setUsernameLocked(usernameLocked)
                 .setPasswordLocked(passwordLocked)
                 .setPrivateKeyLocked(privateKeyLocked)
-                .setConnectionModeLocked(connectionModeLocked);
+                .setConnectionModeLocked(connectionModeLocked)
+                .setPreferIPv6(preferIPv6);
         return builder;
     }
     public static class Builder {
@@ -428,6 +439,8 @@ public class SSHConfig extends Config {
         private boolean passwordLocked;
         private boolean privateKeyLocked;
         private boolean connectionModeLocked;
+        private boolean preferIPv6;
+
 
         public Builder(int configMode) {
             mConfigMode = configMode;
@@ -590,6 +603,7 @@ public class SSHConfig extends Config {
             config.serverPortLocked = serverPortLocked;
             config.privateKeyLocked = privateKeyLocked;
             config.connectionModeLocked = connectionModeLocked;
+            config.setPreferIPv6(preferIPv6);
 
             return config;
 
@@ -647,6 +661,15 @@ public class SSHConfig extends Config {
 
         public Builder setConnectionModeLocked(boolean connectionModeLocked) {
             this.connectionModeLocked = connectionModeLocked;
+            return this;
+        }
+
+        public boolean isPreferIPv6() {
+            return preferIPv6;
+        }
+
+        public Builder setPreferIPv6(boolean preferIPv6) {
+            this.preferIPv6 = preferIPv6;
             return this;
         }
     }

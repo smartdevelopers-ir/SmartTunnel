@@ -31,9 +31,40 @@ public class PrefsUtil {
             "mob.banking.android.sepah",
             "com.sheypoor.mobile",
             "net.iranet.isc.sotp",
-            "ir.stsepehr.hamrahcard",
+            "ir.stsepehr.hamrahcard",//saap
             "com.pooyabyte.mb.android",
-            "com.isc.bsinew",
+            "com.isc.bsinew",// saderat
+            "app.rbmain.a",// robika
+            "com.digikala",
+            "com.sibche.aspardproject.app", // aap
+            "ir.sep.sesoot", // 724
+            "ir.hafhashtad.android780", // 780
+            "com.bpm.sekeh", // sekeh
+            "com.ada.mbank.mehr", // mehriran
+            "com.bki.mobilebanking.android", // keshavarzi
+            "com.pmb.mobile", // melat
+            "com.sadadpsp.eva", // eva-bank meli
+            "com.refahmobilepayment", // refah
+            "com.postbank.mb", // postbank
+            "com.parsmobapp", // parsian
+            "com.farazpardazan.enbank", // novin bank
+            "ir.mci.ecareapp", // hamrah man
+            "com.samanpr.blu", // blu bank
+            "ir.nasim", // bale
+            "ir.eitaa.messenger", // eita
+            "mobi.mmdt.ottplus", // soroush
+            "net.igap", // igap
+            "com.gapafzar.messenger", // gap
+            "ir.rubx.bapp", // robikax
+            "cab.snapp.passenger", // snapp
+            "cab.snapp.driver", // snapp
+            "com.snappbox.bikerapp", // snappbox
+            "com.snapp_box.android", // snappbox
+            "taxi.tap30.passenger", // tap30
+            "taxi.tap30.driver", // tap30
+            "org.rajman.traffic.tehran.navigator", // neshan
+            "ir.balad", // balad
+            "ir.balad", // balad
 
     };
     public static void addConfig(Context context,ConfigListModel model){
@@ -206,5 +237,12 @@ public class PrefsUtil {
     }
     public static boolean isConnectionSoundEnabled(Context context){
         return PreferenceManager.getDefaultSharedPreferences(context).getBoolean(context.getString(R.string.key_connection_sound),false);
+    }
+    public static boolean isPreferIpv6(Context context){
+        return PreferenceManager.getDefaultSharedPreferences(context).getBoolean(context.getString(R.string.key_prefer_ipv6),false);
+    }
+    public static void setPreferIpv6(Context context,boolean prefer){
+         PreferenceManager.getDefaultSharedPreferences(context)
+                .edit().putBoolean(context.getString(R.string.key_prefer_ipv6),false).apply();
     }
 }

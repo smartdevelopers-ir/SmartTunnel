@@ -14,6 +14,7 @@ public abstract class Config {
     private String id;
     private String type;
     private String mNote;
+    private String expireDate;
     private Proxy mProxy;
     protected  State mState ;
    protected transient ParcelFileDescriptor mFileDescriptor;
@@ -25,6 +26,16 @@ public abstract class Config {
         this.type = type;
 
     }
+
+    public String getExpireDate() {
+        return expireDate;
+    }
+
+    public Config setExpireDate(String expireDate) {
+        this.expireDate = expireDate;
+        return this;
+    }
+
     public enum State {
         CONNECTED,DISCONNECTED,DISCONNECTING,CONNECTING,RECONNECTING,WAITING_FOR_NETWORK
     }

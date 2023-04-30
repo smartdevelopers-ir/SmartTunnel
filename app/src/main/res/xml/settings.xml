@@ -23,5 +23,11 @@
         app:allowDividerAbove="true"
         app:icon="@drawable/ic_ringtone"
         />
-
+<!--    <CheckBoxPreference-->
+<!--        app:title="@string/prefer_ipv6"-->
+<!--        app:summary="@string/prefer_ipv6_summary"-->
+<!--        app:key="@string/key_prefer_ipv6"-->
+<!--        app:allowDividerAbove="true"-->
+<!--        app:icon="@drawable/ic_ipv6"-->
+<!--        />-->
 </PreferenceScreen>

@@ -5,6 +5,7 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.text.TextUtils;
 import android.view.View;
+import android.widget.CompoundButton;
 import android.widget.Toast;
 
 import androidx.core.content.ContextCompat;
@@ -83,6 +84,18 @@ public class SSHConfigViewUtil {
         boolean usePrivateKey = mBuilder.isUsePrivateKey();
         mBinding.chbPrivateKey.setChecked(usePrivateKey);
         mBinding.chbPrivateKey.jumpDrawablesToCurrentState();
+
+        if (mBuilder.isPreferIPv6()){
+            mBinding.chbPreferIPv6.setChecked(true);
+            mBinding.chbPreferIPv6.jumpDrawablesToCurrentState();
+        }
+        mBinding.chbPreferIPv6.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                mBuilder.setPreferIPv6(isChecked);
+            }
+        });
+
 
         mBinding.edtServerAddress.addTextChangedListener(new SimpleTextWatcher(mBinding.edtServerAddress, mBinding.edtServerAddressLayout) {
             @Override

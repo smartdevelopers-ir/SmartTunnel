@@ -32,6 +32,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Locale;
@@ -81,6 +82,7 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
     private boolean usernameLocked;
     private boolean passwordLocked;
     private boolean privateKeyLocked;
+    private boolean preferIPv6;
     private VpnProfile mProfile;
 
     private transient HostKeyRepository mHostKeyRepo;
@@ -190,9 +192,22 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
                 proxifiedPort = getProxy().getPort();
 
             }
-
+            String dns = null;
+            String dns1 = PrefsUtil.getDNS1(mVpnService.getApplicationContext());
+            if (!TextUtils.isEmpty(dns1)){
+                dns = dns1;
+            }else {
+                String dns2 = PrefsUtil.getDNS2(mVpnService.getApplicationContext());
+                if (!TextUtils.isEmpty(dns2)){
+                    dns = dns2;
+                }
+            }
+            if (dns == null){
+                throw new ConfigException("DNS not set");
+            }
             JschRemoteConnection connection = new JschRemoteConnection(proxifiedAddress,proxifiedPort,
-                    mUsername,mPassword, isServerAddressLocked(), isServerPortLocked(), isUsernameLocked());
+                    mUsername,mPassword, isServerAddressLocked(), isServerPortLocked(), isUsernameLocked(),
+                    dns,preferIPv6);
             connection.setPrivateKey(privateKey);
             mRemoteConnection = connection;
             if (getProxy() instanceof HttpProxy) {
@@ -589,7 +604,8 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
                 .setServerAddressLocked(serverAddressLocked)
                 .setServerPortLocked(serverPortLocked)
                 .setUsernameLocked(usernameLocked)
-                .setPasswordLocked(passwordLocked);
+                .setPasswordLocked(passwordLocked)
+                .setPreferIPv6(preferIPv6);
 
     }
 
@@ -824,14 +840,24 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
         Set<String> forbiddenApps = PrefsUtil.getForbiddenApps(mVpnService.getApplicationContext());
 
         if (PrefsUtil.isAllowSelectedAppsEnabled(mVpnService.getApplicationContext())) {
-            for (String app : selectedApps) {
-                if (forbiddenApps.contains(app)) {
-                    continue;
+            if (selectedApps.isEmpty()){
+                for (String app : forbiddenApps) {
+                    try {
+                        packageManager.getPackageInfo(app, 0);
+                        builder.addDisallowedApplication(app);
+                    } catch (PackageManager.NameNotFoundException ignore) {
+                    }
                 }
-                try {
-                    packageManager.getPackageInfo(app, 0);
-                    builder.addAllowedApplication(app);
-                } catch (PackageManager.NameNotFoundException ignore) {
+            }else {
+                for (String app : selectedApps) {
+                    if (forbiddenApps.contains(app)) {
+                        continue;
+                    }
+                    try {
+                        packageManager.getPackageInfo(app, 0);
+                        builder.addAllowedApplication(app);
+                    } catch (PackageManager.NameNotFoundException ignore) {
+                    }
                 }
             }
 
@@ -846,7 +872,16 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
                 }
             }
         }
-//            builder.addAllowedApplication("ir.smartdevelopers.tcptest");
+        if (PrefsUtil.isAllowSelectedAppsEnabled(mVpnService.getApplicationContext())){
+            // show selected apps as allowed apps in log
+            Logger.logMessage(new LogItem("Allowed apps : "+ Arrays.toString(selectedApps.toArray())));
+        }else {
+            // show selected apps as disallowed apps in log
+            Logger.logMessage(new LogItem("Disallowed apps : "+ Arrays.toString(selectedApps.toArray())));
+
+        }
+
+//            builder.addAllowedApplication("ir.smartdevelopers.tcptest")
 //            builder.addAllowedApplication("com.android.chrome");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
             // VPN always uses the default network
@@ -986,7 +1021,19 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
 
 
     public boolean isConnected() {
+        if (mRemoteConnection == null){
+            return false;
+        }
         return  mRemoteConnection.isConnected();
+    }
+
+    public boolean isPreferIPv6() {
+        return preferIPv6;
+    }
+
+    public OpenVpnConfig setPreferIPv6(boolean preferIPv6) {
+        this.preferIPv6 = preferIPv6;
+        return this;
     }
 
     public static class Builder {
@@ -1003,6 +1050,8 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
         private boolean usernameLocked;
         private boolean passwordLocked;
         private boolean privateKeyLocked;
+        private boolean preferIPv6;
+
         private VpnProfile mProfile;
 
         public String getId() {
@@ -1130,7 +1179,14 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
             mProfile = profile;
             return this;
         }
+        public boolean isPreferIPv6() {
+            return preferIPv6;
+        }
 
+        public Builder setPreferIPv6(boolean preferIPv6) {
+            this.preferIPv6 = preferIPv6;
+            return this;
+        }
         public OpenVpnConfig build(){
             if (TextUtils.isEmpty(id)) {
                 id = UUID.randomUUID().toString();
@@ -1143,8 +1199,11 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
             config.usernameLocked = usernameLocked;
             config.passwordLocked = passwordLocked;
             config.privateKeyLocked = privateKeyLocked;
+            config.preferIPv6 = preferIPv6;
             return config;
         }
+
+
     }
 
     public static OpenVpnConfig fromJson(String json){

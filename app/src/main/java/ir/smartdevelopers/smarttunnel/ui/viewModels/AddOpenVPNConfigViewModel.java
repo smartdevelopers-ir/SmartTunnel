@@ -36,7 +36,8 @@ public class AddOpenVPNConfigViewModel extends ViewModel {
                 .setServerPortLocked(sshConfigBuilder.isServerPortLocked())
                 .setUsernameLocked(sshConfigBuilder.isUsernameLocked())
                 .setPasswordLocked(sshConfigBuilder.isPasswordLocked())
-                .setPrivateKeyLocked(sshConfigBuilder.isPrivateKeyLocked());
+                .setPrivateKeyLocked(sshConfigBuilder.isPrivateKeyLocked())
+                .setPreferIPv6(sshConfigBuilder.isPreferIPv6());
 
         return builder.build();
     }

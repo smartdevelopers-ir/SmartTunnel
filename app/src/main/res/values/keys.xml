@@ -3,4 +3,5 @@
     <string name="key_proxy">key_proxy</string>
     <string name="key_dns">key_dns</string>
     <string name="key_connection_sound">key_connection_sound</string>
+    <string name="key_prefer_ipv6">key_prefer_ipv6</string>
 </resources>

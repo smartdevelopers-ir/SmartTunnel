@@ -125,10 +125,23 @@
             />
     </com.google.android.material.textfield.TextInputLayout>
     <com.google.android.material.checkbox.MaterialCheckBox
-        android:id="@+id/chbPrivateKey"
+        android:id="@+id/chbPreferIPv6"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintTop_toBottomOf="@id/edtPasswordLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginEnd="16dp"
+        android:text="@string/prefer_ipv6"
+        style="@style/RadioButtonStyle"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+
+        />
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:id="@+id/chbPrivateKey"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/chbPreferIPv6"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginEnd="16dp"
         android:text="@string/private_key"
@@ -169,4 +182,5 @@
         android:textColor="@color/colorActiveText"
         tools:text="You pasted private key : ADF...EDP"
         />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

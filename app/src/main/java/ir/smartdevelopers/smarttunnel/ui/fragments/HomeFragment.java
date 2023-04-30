@@ -146,10 +146,10 @@ public class HomeFragment extends Fragment {
 
     private void initViews() {
         mBinding.btnConnect.setOnClickListener(v->{
-            if (isConnected() || isConnecting()){
-                disconnect();
-            }else {
+            if (isDisconnected()){
                 connect();
+            }else {
+                disconnect();
             }
         });
         mBinding.toolbar.setOnMenuItemClickListener(item -> {
@@ -171,6 +171,7 @@ public class HomeFragment extends Fragment {
 
 
     }
+
 
     private void openSettingsActivity() {
         startActivity(new Intent(requireContext(), SettingsActivity.class));
@@ -211,11 +212,26 @@ public class HomeFragment extends Fragment {
         }
         return false;
     }
-
+    private boolean isNetworkError() {
+        if (mVpnService!=null){
+            return mVpnService.mStatus == MyVpnService.Status.NETWORK_ERROR;
+        }
+        return false;
+    }
+    private boolean isDisconnected() {
+        if (mVpnService!=null){
+            return mVpnService.mStatus == MyVpnService.Status.DISCONNECTED;
+        }
+        return true;
+    }
     private void disconnect() {
         MyVpnService.disconnect(requireContext(),true);
+        onDisconnect();
     }
     private void onDisconnect(){
+        if(Objects.equals("disconnected",mBinding.btnConnectBorder.getTag())){
+            return;
+        }
         mBinding.btnConnectBorder.setTag("disconnected");
         mBinding.btnConnect.setBackgroundResource(R.drawable.btn_connect_inactive);
         mBinding.btnConnectBorder.setImageLevel(R.drawable.btn_connect_inactive_border);
