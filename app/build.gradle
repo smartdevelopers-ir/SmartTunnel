@@ -12,11 +12,12 @@ android {
         minSdk 21
         targetSdk 33
         versionCode 1
-        versionName "1.0"
+        versionName "1.0.1"
         dimension = "implementation"
         buildConfigField("boolean", "openvpn3", "true")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-
+        multiDexEnabled true
+        setProperty("archivesBaseName", "SmartTunnel-$versionName")
     }
     buildFeatures {
         aidl = true
@@ -47,6 +48,7 @@ android {
             assets.setSrcDirs(["src/main/assets", "build/ovpnassets"])
         }
     }
+
 }
 
 dependencies {
@@ -57,6 +59,7 @@ dependencies {
     implementation 'com.google.android.material:material:1.8.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.work:work-runtime:2.8.1'
+    implementation 'com.android.support:multidex:1.0.3'
     implementation files('libs/tun2socks.aar')
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
@@ -70,7 +73,10 @@ dependencies {
 // https://mvnrepository.com/artifact/com.sshtools/maverick-synergy-client
     implementation group: 'com.sshtools', name: 'maverick-synergy-client', version: '3.0.10'
 // https://mvnrepository.com/artifact/com.hierynomus/sshj
-    implementation group: 'com.hierynomus', name: 'sshj', version: '0.35.0'
+    implementation ('com.hierynomus:sshj:0.35.0'){
+        exclude group: 'com.jcraft', module: 'jzlib'
+    }
+
     implementation 'com.madgag.spongycastle:core:1.58.0.0'
 // https://mvnrepository.com/artifact/com.madgag.spongycastle/prov
     implementation 'com.madgag.spongycastle:prov:1.58.0.0'

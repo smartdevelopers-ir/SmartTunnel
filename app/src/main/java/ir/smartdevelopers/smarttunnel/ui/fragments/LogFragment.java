@@ -1,6 +1,8 @@
 package ir.smartdevelopers.smarttunnel.ui.fragments;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,11 +10,15 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import java.io.File;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 
 import ir.smartdevelopers.smarttunnel.R;
 import ir.smartdevelopers.smarttunnel.databinding.FragmentLogBinding;
@@ -74,6 +80,8 @@ public class LogFragment extends Fragment {
         mBinding.toolbar.setOnMenuItemClickListener(item -> {
             if (item.getItemId() == R.id.action_delete){
                 deleteLogs();
+            }else if (item.getItemId() == R.id.action_share){
+                shareLog();
             }
             return true;
         });
@@ -97,5 +105,23 @@ public class LogFragment extends Fragment {
             mLogAdapter.notifyDataSetChanged();
         }
         PrefsUtil.addLog(requireContext(),mLogs.toArray(new LogItem[0]));
+    }
+    public void shareLog(){
+        Calendar calendar = Calendar.getInstance();
+        String name = String.format(Locale.ENGLISH,"%tY-%tm-%td",calendar,calendar,calendar);
+        File logFolder = requireContext().getExternalFilesDir("logs");
+        File logFile = new File(logFolder,name+".log");
+        Uri uri = FileProvider.getUriForFile(requireContext(),requireContext().getPackageName()+".provider",
+                logFile);
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        shareIntent.putExtra(Intent.EXTRA_STREAM,uri);
+        shareIntent.setType("*/*");
+
+            Intent choser = Intent.createChooser(shareIntent,"Choose app to share");
+            if (choser != null){
+                startActivity(choser);
+            }
+
     }
 }

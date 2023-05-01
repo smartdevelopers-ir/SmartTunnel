@@ -51,7 +51,9 @@ public class TestMainActivity extends AppCompatActivity {
         SshClient client ;
         mBinding.btnConnect.setOnClickListener(v -> {
 
-
+            if (true){
+                throw new RuntimeException("test");
+            }
 
             // DNS
             try {

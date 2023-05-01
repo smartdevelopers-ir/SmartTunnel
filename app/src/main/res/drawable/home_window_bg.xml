@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<transition
+    xmlns:android="http://schemas.android.com/apk/res/android">
+<item android:drawable="@drawable/window_bg_disconnected"
+    android:id="@+id/disconnected_bg"/>
+    <item android:drawable="@drawable/window_bg"
+        android:id="@+id/connected_bg"/>
+</transition>

@@ -32,6 +32,7 @@ import androidx.fragment.app.Fragment;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.net.Proxy;
+import java.util.List;
 import java.util.Objects;
 
 import ir.smartdevelopers.smarttunnel.MyVpnService;
@@ -39,6 +40,7 @@ import ir.smartdevelopers.smarttunnel.R;
 import ir.smartdevelopers.smarttunnel.databinding.FragmentHomeBinding;
 import ir.smartdevelopers.smarttunnel.ui.activities.SettingsActivity;
 import ir.smartdevelopers.smarttunnel.ui.models.ConfigListModel;
+import ir.smartdevelopers.smarttunnel.ui.models.LogItem;
 import ir.smartdevelopers.smarttunnel.ui.utils.PrefsUtil;
 import ir.smartdevelopers.smarttunnel.ui.utils.Util;
 
@@ -47,6 +49,7 @@ public class HomeFragment extends Fragment {
     private ServiceConnection mServiceConnection;
     private MyVpnService mVpnService;
     private BroadcastReceiver mStatusReceiver;
+    private int currentBgId = R.id.disconnected_bg;
     private ActivityResultLauncher<Intent> mVpnServicePermissionLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
             new ActivityResultCallback<ActivityResult>() {
                 @Override
@@ -147,6 +150,11 @@ public class HomeFragment extends Fragment {
     private void initViews() {
         mBinding.btnConnect.setOnClickListener(v->{
             if (isDisconnected()){
+                if (mServiceConnection != null){
+                    if (mVpnService != null){
+                        mVpnService.reset();
+                    }
+                }
                 connect();
             }else {
                 disconnect();
@@ -188,6 +196,7 @@ public class HomeFragment extends Fragment {
             Toast.makeText(requireContext(), R.string.selecet_config, Toast.LENGTH_SHORT).show();
             return;
         }
+        resetLogs();
         MyVpnService.connect(requireContext(),currentConfig.configId,currentConfig.type);
         onConnecting();
     }
@@ -198,14 +207,21 @@ public class HomeFragment extends Fragment {
         }
         startConnectingAnimation();
         mBinding.txtConnectionNote.setText(R.string.connecting_);
+        transitBgToDisconnected();
     }
     private void onConnect(){
         mBinding.btnConnectBorder.setTag("connected");
         mBinding.btnConnect.setBackgroundResource(R.drawable.btn_connect_active);
         mBinding.btnConnectBorder.setImageLevel(R.drawable.btn_connect_active_border);
         mBinding.txtConnectionNote.setText(R.string.connected);
+        transitBgToConnected();
     }
 
+    private void resetLogs(){
+        PrefsUtil.clearLogs(requireContext());
+        List<LogItem> deviceLogs = Util.getDeviceInfoLogs(requireContext());
+        PrefsUtil.addLog(requireContext(),deviceLogs.toArray(new LogItem[0]));
+    }
     private boolean isConnecting() {
         if (mVpnService!=null){
             return mVpnService.mStatus == MyVpnService.Status.CONNECTING;
@@ -236,6 +252,7 @@ public class HomeFragment extends Fragment {
         mBinding.btnConnect.setBackgroundResource(R.drawable.btn_connect_inactive);
         mBinding.btnConnectBorder.setImageLevel(R.drawable.btn_connect_inactive_border);
         mBinding.txtConnectionNote.setText(R.string.tap_to_connect);
+        transitBgToDisconnected();
     }
 
     private boolean isConnected() {
@@ -243,6 +260,28 @@ public class HomeFragment extends Fragment {
             return mVpnService.mStatus == MyVpnService.Status.CONNECTED;
         }
         return false;
+    }
+    private void transitBgToConnected(){
+        if (currentBgId == R.id.connected_bg){
+            return;
+        }
+        if (mBinding.getRoot().getBackground() instanceof TransitionDrawable){
+            TransitionDrawable drawable = (TransitionDrawable) mBinding.getRoot().getBackground();
+            drawable.setCrossFadeEnabled(true);
+            drawable.startTransition(500);
+            currentBgId = R.id.connected_bg;
+        }
+    }
+    private void transitBgToDisconnected(){
+        if (currentBgId == R.id.disconnected_bg){
+            return;
+        }
+        if (mBinding.getRoot().getBackground() instanceof TransitionDrawable){
+            TransitionDrawable drawable = (TransitionDrawable) mBinding.getRoot().getBackground();
+            drawable.setCrossFadeEnabled(true);
+            drawable.reverseTransition(500);
+            currentBgId = R.id.disconnected_bg;
+        }
     }
     private void startConnectingAnimation() {
         if (Objects.equals(mBinding.btnConnectBorder.getTag(),"connecting")){

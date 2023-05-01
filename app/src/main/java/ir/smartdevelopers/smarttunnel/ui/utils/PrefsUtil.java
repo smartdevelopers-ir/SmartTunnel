@@ -177,6 +177,12 @@ public class PrefsUtil {
         }
         return new Gson().fromJson(selectedConfigJson,ConfigListModel.class);
     }
+    public static void setFirstTime(Context context , boolean firstTime){
+        getGeneralPrefs(context).edit().putBoolean("first_time",firstTime).apply();
+    }
+    public static boolean isFirstTime(Context context ){
+        return getGeneralPrefs(context).getBoolean("first_time",true);
+    }
     public static Set<String> getSelectedApps(Context context){
         HashSet<String> apps = new HashSet<>(getGeneralPrefs(context).getStringSet("selected_apps",Collections.emptySet()));
         return apps;
@@ -194,7 +200,7 @@ public class PrefsUtil {
         getGeneralPrefs(context).edit().putStringSet("forbidden_apps",forbiddenApps).apply();
     }
     public static boolean isAllowSelectedAppsEnabled(Context context){
-        return getGeneralPrefs(context).getBoolean("allow_selected_apps",false);
+        return getGeneralPrefs(context).getBoolean("allow_selected_apps",true);
     }
     public static void setAllowSelectedApps(Context context,boolean enable){
         getGeneralPrefs(context).edit().putBoolean("allow_selected_apps",enable).apply();
@@ -206,13 +212,13 @@ public class PrefsUtil {
         return getGeneralPrefs(context).getString("DNS_name","Google");
     }
     public static String getDNS1(Context context){
-        return getGeneralPrefs(context).getString("DNS1","");
+        return getGeneralPrefs(context).getString("DNS1","8.8.8.8");
     }
     public static void setDNS1(Context context,String dns1){
         getGeneralPrefs(context).edit().putString("DNS1",dns1).apply();
     }
     public static String getDNS2(Context context){
-        return getGeneralPrefs(context).getString("DNS2","");
+        return getGeneralPrefs(context).getString("DNS2","8.8.4.4");
     }
     public static void setDNS2(Context context,String dns2){
         getGeneralPrefs(context).edit().putString("DNS2",dns2).apply();

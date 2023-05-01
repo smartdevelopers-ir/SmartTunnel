@@ -28,6 +28,7 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
@@ -70,6 +71,7 @@ public class ExampleUnitTest {
     }
     @Test
     public void byteCoptyTest(){
+
         byte[] a={1,2,3,4,5,6};
         byte[] b = Arrays.copyOfRange(a,0,2*2);
         byte[] c= Arrays.copyOfRange(a,2*2,a.length);
@@ -84,6 +86,12 @@ public class ExampleUnitTest {
 
         System.out.println(Arrays.toString(a));
 
+    }
+    @Test
+    public void dateFormatTest(){
+        Calendar calendar = Calendar.getInstance();
+        String name = String.format("%tY-%tm-%td",calendar,calendar,calendar);
+        assertEquals(name,"2023-05-01");
     }
     @Test
     public void intToByteTest(){

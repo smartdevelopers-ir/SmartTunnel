@@ -11,6 +11,10 @@ import org.xbill.DNS.Type;
 
 import java.util.Random;
 
+import de.blinkt.openvpn.core.NetworkUtils;
+import ir.smartdevelopers.smarttunnel.ui.models.LogItem;
+import ir.smartdevelopers.smarttunnel.utils.Logger;
+
 public class DNSUtil {
     public static String getIpV6(String hostName,String dnsServer){
         try{
@@ -52,7 +56,13 @@ public class DNSUtil {
     }
     public static String getIp(String host,String dnsServer,boolean preferIpV6){
         String ipv6 = null;
+        boolean isDeviceSupportIpV6 = NetworkUtils.isIPv6Enabled();
         if (preferIpV6){
+            if (!isDeviceSupportIpV6){
+                Logger.logMessage(new LogItem("prefer IPv6 but device network not support it"));
+            }
+        }
+        if (preferIpV6 && isDeviceSupportIpV6){
            ipv6 = getIpV6(host,dnsServer);
         }
         if (ipv6 != null){

@@ -4,29 +4,68 @@ import android.app.Application;
 import android.os.Build;
 import android.os.StrictMode;
 import android.os.strictmode.Violation;
+import android.support.multidex.BuildConfig;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationChannelCompat;
 import androidx.core.app.NotificationManagerCompat;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.HashSet;
+import java.util.Locale;
 import java.util.concurrent.Executors;
 
+import ir.smartdevelopers.smarttunnel.ui.utils.PrefsUtil;
 import ir.smartdevelopers.smarttunnel.utils.Logger;
 
 public class SmartTunnelApp extends Application {
     public static int mStatusBarHeight = 0;
+    private final String[] defaultSelectedApps = {
+            "com.android.vending",
+            "com.google.android.gms",
+    };
     @Override
     public void onCreate() {
 
         if (BuildConfig.BUILD_TYPE.equals("debug")) {
             enableStrictModes();
         }
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(@NonNull Thread t, @NonNull Throwable e) {
+                try{
+                    Calendar calendar = Calendar.getInstance();
+                    String name = String.format(Locale.ENGLISH,"%tY-%tm-%td",calendar,calendar,calendar);
+                    File logFolder = getApplicationContext().getExternalFilesDir("logs");
+                    File logFile = new File(logFolder,name+".log");
+                    OutputStreamWriter fw = new FileWriter(logFile) ;
+                    fw.append(Arrays.toString(e.getStackTrace()));
+                    fw.close();
+
+                } catch (Exception ex) {
+                    //ignore
+                }
+            }
+        });
         super.onCreate();
 //        StatusListener mStatus = new StatusListener();
 //        mStatus.init(getApplicationContext());
         createNotificatonChannel();
         if (Logger.getContext() == null){
             Logger.setContext(getApplicationContext());
+        }
+        if (PrefsUtil.isFirstTime(getApplicationContext())){
+            PrefsUtil.setSelectedApps(getApplicationContext(),new HashSet<>(Arrays.asList(defaultSelectedApps)));
+            PrefsUtil.setFirstTime(getApplicationContext(),false);
         }
 
     }

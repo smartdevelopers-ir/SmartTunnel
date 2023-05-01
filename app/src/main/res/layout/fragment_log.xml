@@ -13,7 +13,8 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:menu="@menu/has_delete_menu"
+        app:menu="@menu/log_menu"
+        app:title="@string/logs"
         />
 </com.google.android.material.appbar.AppBarLayout>
     <androidx.recyclerview.widget.RecyclerView

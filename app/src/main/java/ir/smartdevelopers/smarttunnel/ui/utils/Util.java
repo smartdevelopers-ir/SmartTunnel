@@ -43,6 +43,7 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
 import de.blinkt.openvpn.core.NetworkUtils;
+import ir.smartdevelopers.smarttunnel.BuildConfig;
 import ir.smartdevelopers.smarttunnel.SmartTunnelApp;
 import ir.smartdevelopers.smarttunnel.ui.interfaces.OnCompleteListener;
 import ir.smartdevelopers.smarttunnel.ui.models.LogItem;
@@ -102,6 +103,7 @@ public class Util {
         }
         String androidVersion = Build.VERSION.RELEASE;
         logs.add(new LogItem(String.format("Android version : %s",androidVersion)));
+        logs.add(new LogItem("App version : "+ BuildConfig.VERSION_NAME));
 
 
 

@@ -17,6 +17,12 @@ import android.provider.Settings;
 
 import java.net.Inet4Address;
 import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Enumeration;
+import java.util.Objects;
 import java.util.Vector;
 
 public class NetworkUtils {
@@ -95,5 +101,20 @@ public class NetworkUtils {
             return false;
         }
         return info.isConnected();
+    }
+    public static boolean isIPv6Enabled(){
+        try {
+            InetAddress[] addresses = InetAddress.getAllByName("google.com");
+            if (addresses != null){
+                for (InetAddress add : addresses){
+                    if (add instanceof Inet6Address){
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            //ignore
+        }
+        return false;
     }
 }

@@ -19,7 +19,6 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.os.ParcelFileDescriptor;
-import android.os.SystemClock;
 import android.text.TextUtils;
 import android.widget.Toast;
 
@@ -100,6 +99,14 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
         CONNECTED, CONNECTING, DISCONNECTED, NETWORK_ERROR
     }
 
+    public void reset(){
+        mStopService = false;
+        retryWaitTime = 0;
+        retryCount = 0;
+        mCurrentConfig = null;
+        mConfigId = null;
+        mConfigType = null;
+    }
     @Override
     public void onCreate() {
         super.onCreate();
@@ -155,6 +162,25 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
         }
     }
 
+     class RetryRunnable implements Runnable {
+        private String configId;
+        private String configType;
+
+        RetryRunnable(String configId, String configType) {
+            this.configId = configId;
+            this.configType = configType;
+        }
+
+        @Override
+        public void run() {
+            if (mStopService){
+                return;
+            }
+            connect(getApplicationContext(), configId, configType);
+        }
+    }
+    private RetryRunnable mRetryRunnable;
+    @SuppressLint("DefaultLocale")
     private void retry() {
 
         if (TextUtils.isEmpty(mConfigId)) {
@@ -173,7 +199,16 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
         }
         retryCount++;
         terminate();
-        connect(getApplicationContext(), mConfigId, mConfigType);
+        if (mRetryRunnable != null){
+            mUiThreadHandler.removeCallbacks(mRetryRunnable);
+        }
+        mRetryRunnable = new RetryRunnable(mConfigId,mConfigType);
+        if (retryWaitTime > 0) {
+            Logger.logMessage(new LogItem(String.format("[VPNService] waiting for %d seconds before retying...", retryWaitTime)));
+            mUiThreadHandler.postDelayed(mRetryRunnable ,retryWaitTime * 1000L);
+        }
+
+
     }
 
     public void forceDisconnect() {
@@ -190,6 +225,9 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
         retryWaitTime = 0;
         Logger.logStyledMessage("YOU ARE DISCONNECTED", "red", true);
         sendStatusChangedSignal(Status.DISCONNECTED);
+        if (mRetryRunnable != null){
+            mUiThreadHandler.removeCallbacks(mRetryRunnable);
+        }
         terminate();
         stopForeground(true);
         stopSelf();
@@ -242,14 +280,18 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
         if (isInConnectProcess) {
             return;
         }
+        if (mConfigType == null || mConfigId == null){
+            return;
+        }
+        if (mStopService){
+            mStopService = false;
+            return;
+        }
 //        mStatus = Status.CONNECTING;
-        mStopService = false;
+
         isInConnectProcess = true;
         sendStatusChangedSignal(Status.CONNECTING);
-        if (retryWaitTime > 0) {
-            Logger.logMessage(new LogItem(String.format("[VPNService] waiting for %d seconds before retying...", retryWaitTime)));
-            SystemClock.sleep(retryWaitTime * 1000L);
-        }
+
         try {
             Logger.logMessage(new LogItem("[VPNService] start connecting..."));
             mCurrentConfig = ConfigsUtil.loadConfig(getApplicationContext(), configId, configType);
@@ -276,7 +318,10 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
         mCurrentConfig.setVpnService(this);
         try {
             mCurrentConfig.connect();
-
+            Socket socket = mCurrentConfig.getMainSocket();
+            if (socket != null) {
+                protect(mCurrentConfig.getMainSocket());
+            }
         } catch (ConfigException e) {
             if (mStatus == Status.NETWORK_ERROR || !NetworkUtils.isConnected(getApplicationContext())) {
                 return;
@@ -290,14 +335,22 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
                     return;
                 }
             }
+            String message = null;
+            Throwable t = e;
+            while (message == null){
+                if (t != null){
+                    message = t.getMessage();
+                }
+                if (message == null){
+                    t = e.getCause();
+                }
+            }
+            Logger.logMessage(new LogItem(String.format("Error in connection : "+ message)));
 
             retry();
 
         }
-        Socket socket = mCurrentConfig.getMainSocket();
-        if (socket != null) {
-            protect(mCurrentConfig.getMainSocket());
-        }
+
 
 
     }
@@ -322,6 +375,8 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
         Logger.logMessage(new LogItem("Network is disconnected. Wating for connecting again"));
 //        mStatus = Status.NETWORK_ERROR;
         sendStatusChangedSignal(Status.NETWORK_ERROR);
+        retryCount = 0;
+        retryWaitTime = 0;
         if (mCurrentConfig != null) {
             mCurrentConfig.cancel();
         }

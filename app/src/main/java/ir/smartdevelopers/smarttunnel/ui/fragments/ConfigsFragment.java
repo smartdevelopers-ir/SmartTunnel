@@ -69,7 +69,12 @@ public class ConfigsFragment extends Fragment {
                         String configModelJson = result.getData().getStringExtra(AddSSHConfigActivity.KEY_CONFIG_MODEL);
                         ConfigListModel listModel = gson.fromJson(configModelJson,ConfigListModel.class);
                         int mode = result.getData().getIntExtra(AddSSHConfigActivity.KEY_MODE,AddSSHConfigActivity.MODE_ADD);
+
                         if (mode == AddSSHConfigActivity.MODE_ADD){
+                            if (mAdapter.getItemCount() == 0){
+                                listModel.setSelected(true);
+                                PrefsUtil.setSelectedConfig(requireContext(),listModel);
+                            }
                             mAdapter.addConfig(listModel);
                         }else {
                             mAdapter.configUpdated(listModel);
@@ -179,11 +184,8 @@ public class ConfigsFragment extends Fragment {
         undoSnackBar.setAction(R.string.undo, new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (mAdapter != null){
-                    mBinding.txtNoConfigMessage.setVisibility(View.GONE);
-                    mAdapter.addConfig(mLastDeletedConfig,mLastDeletedConfigPosition);
-                }
-                PrefsUtil.addConfig(requireContext(),mLastDeletedConfig);
+                addConfigListModel(mLastDeletedConfig,mLastDeletedConfigPosition);
+
             }
         });
         mBinding.toolbar.setOnMenuItemClickListener(item -> {
@@ -239,7 +241,7 @@ public class ConfigsFragment extends Fragment {
                             AlertUtil.showToast(requireContext(), R.string.config_already_exists, Toast.LENGTH_SHORT, AlertUtil.Type.WARNING);
                             return;
                         }
-                        addConfigListModel(model);
+                        addConfigListModel(model,null);
                         AlertUtil.showToast(requireContext(),R.string.config_imported_successfully,Toast.LENGTH_SHORT, AlertUtil.Type.SUCCESS);
                         try {
                             ConfigsUtil.saveConfig(requireContext(),config);
@@ -266,9 +268,17 @@ public class ConfigsFragment extends Fragment {
     }
 
 
-    private void addConfigListModel(ConfigListModel model){
+    private void addConfigListModel(ConfigListModel model, Integer configPosition){
         if (mAdapter != null){
-            mAdapter.addConfig(model);
+            if (mAdapter.getItemCount() == 0){
+                model.setSelected(true);
+                PrefsUtil.setSelectedConfig(requireContext(),model);
+            }
+            if (configPosition != null){
+                mAdapter.addConfig(model,configPosition);
+            }else {
+                mAdapter.addConfig(model);
+            }
         }
         PrefsUtil.addConfig(requireContext(),model);
         mBinding.txtNoConfigMessage.setVisibility(View.GONE);

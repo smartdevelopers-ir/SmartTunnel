@@ -24,6 +24,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:menu="@menu/main_nav_menu"
         app:compatShadowEnabled="true"
+        app:labelVisibilityMode="labeled"
         >
 
     </com.google.android.material.bottomnavigation.BottomNavigationView>
