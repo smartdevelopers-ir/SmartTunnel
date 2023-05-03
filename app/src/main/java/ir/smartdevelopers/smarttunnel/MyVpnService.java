@@ -61,6 +61,8 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
     public static final String ACTION_CONNECTED = "connected";
     public static final String ACTION_DISCONNECTED = "disconnected";
     public static final String ACTION_CONNECTING = "connecting";
+    private static final String ACTION_RETRYING = "retrying";
+    private static final String ACTION_DISCONNECTING = "disconnecting";
     private static final int NOTIFICATION_ID = 50;
     public static final String NOTIFICATION_CHANNEL_BG_ID = "smart_tunnel_notification_bg";
     private ParcelFileDescriptor vpnInterface = null;
@@ -96,7 +98,7 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
 
 
     public enum Status {
-        CONNECTED, CONNECTING, DISCONNECTED, NETWORK_ERROR
+        CONNECTED, CONNECTING, DISCONNECTED, NETWORK_ERROR,DISCONNECTING,RETRYING
     }
 
     public void reset(){
@@ -194,6 +196,7 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
             return;
         }
         Logger.logMessage(new LogItem("Reconnecting ..."));
+        sendStatusChangedSignal(Status.RETRYING);
         if (retryCount % 3 == 0) {
             retryWaitTime += 2;
         }
@@ -367,7 +370,7 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
 
     public void onReconnecting() {
 //        mStatus = Status.CONNECTING;
-        sendStatusChangedSignal(Status.CONNECTING);
+        sendStatusChangedSignal(Status.RETRYING);
     }
 
     @Override
@@ -386,11 +389,9 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
     public void onNetworkConnected(boolean changed) {
         if (changed && mStatus == Status.CONNECTED) {
             Logger.logMessage(new LogItem("Network changed"));
-            mStatus = Status.DISCONNECTED;
             retry();
         } else if (mStatus == Status.NETWORK_ERROR) {
             Logger.logMessage(new LogItem("Network connected"));
-            mStatus = Status.DISCONNECTED;
             retry();
         }
 
@@ -466,6 +467,14 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
                 if (mStatus == Status.CONNECTED) {
                     playDisconnectSound();
                 }
+                break;
+            case RETRYING:
+                intent.setAction(ACTION_RETRYING);
+                notificationText = getString(R.string.retrying);
+                break;
+            case DISCONNECTING:
+                intent.setAction(ACTION_DISCONNECTING);
+                notificationText = getString(R.string.disconncting);
                 break;
             case DISCONNECTED:
                 intent.setAction(ACTION_DISCONNECTED);
