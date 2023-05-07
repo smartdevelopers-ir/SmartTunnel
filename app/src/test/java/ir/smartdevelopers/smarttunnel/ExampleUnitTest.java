@@ -419,4 +419,19 @@ public class ExampleUnitTest {
         return bytes;
     }
 
+    @Test
+    public void semaphoreTest(){
+        Semaphore semaphore = new Semaphore(0);
+        int[] count = {0};
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    semaphore.acquire();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }).start();
+    }
 }

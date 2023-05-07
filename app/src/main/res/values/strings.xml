@@ -151,5 +151,13 @@
     <string name="share">Share</string>
     <string name="retrying">Retrying...</string>
     <string name="disconncting">Disconnecting...</string>
+    <string name="no_connection_message">You have no Network. please connect to a network</string>
+    <string name="open_vpn_over_ssh">OpenVPN over SSH</string>
+    <string name="ssh_tunnel">SSH tunnel</string>
+    <string name="add_openvpn_config_title">Add OpenVPN Config</string>
+    <string name="update_available_message">New version is available! Please update !</string>
+    <string name="update_available_title">New Update</string>
+    <string name="update">Update</string>
+    <string name="download_update_descriptin">Downloading Smart Tunnel update</string>
 
 </resources>

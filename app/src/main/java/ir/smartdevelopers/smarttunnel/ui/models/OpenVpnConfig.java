@@ -106,7 +106,6 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
     private transient String mLastTunCfg;
     private transient String mRemoteGW;
     private transient Handler mRetryHandler;
-    private transient ParcelFileDescriptor mParcelFileDescriptor;
 
 
 
@@ -275,23 +274,23 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
                     throw new ConfigException("Can not connect to OpenVpn client");
                 }
             }
-            Runnable processThread;
+
             if (useOpenVPN3) {
                 OpenVPNManagement mOpenVPN3 = instantiateOpenVPN3Core();
-                processThread = (Runnable) mOpenVPN3;
+                mOpenVPNThread = (Runnable) mOpenVPN3;
                 mManagement = mOpenVPN3;
             } else {
-                processThread = new OpenVPNThread(mVpnService, argv, nativeLibraryDirectory, tmpDir);
+                mOpenVPNThread = new OpenVPNThread(mVpnService, argv, nativeLibraryDirectory, tmpDir);
             }
             synchronized (mProcessLock) {
-                mProcessThread = new Thread(processThread, "OpenVPNProcessThread");
+                mProcessThread = new Thread(mOpenVPNThread, "OpenVPNProcessThread");
                 mProcessThread.start();
             }
 
             if (!useOpenVPN3) {
                 try {
                     profile.writeConfigFileOutput(mVpnService.getApplicationContext(),
-                            ((OpenVPNThread) processThread).getOpenVPNStdin());
+                            ((OpenVPNThread) mOpenVPNThread).getOpenVPNStdin());
                 } catch (IOException | ExecutionException | InterruptedException e) {
                     Logger.logStyledMessage(String.format("Error generating config file %s", e.getMessage()),"#FFBA44",false);
                     mState = State.DISCONNECTING;
@@ -325,9 +324,9 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
         if (getProxy() instanceof SSHProxy){
             ((SSHProxy) getProxy()).getSSHConfig().cancel();
         }
-        if (mParcelFileDescriptor != null){
-            mParcelFileDescriptor.close();
-            mParcelFileDescriptor = null;
+        if (mFileDescriptor != null){
+            mFileDescriptor.close();
+            mFileDescriptor = null;
 
         }
     }
@@ -414,12 +413,13 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
         if (mState != State.WAITING_FOR_NETWORK){
             mState = State.DISCONNECTED;
         }
-        stopOldOpenVPNProcess();
         try {
             disConnectPreviousConnection();
         } catch (Exception ignore) {
 
         }
+        stopOldOpenVPNProcess();
+        mOpenVPNThread = null;
     }
 
     @Override
@@ -768,8 +768,8 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
 
     @Override
     public ParcelFileDescriptor getFileDescriptor() {
-        mParcelFileDescriptor = openTun();
-       return mParcelFileDescriptor;
+        mFileDescriptor = openTun();
+       return mFileDescriptor;
     }
     public ParcelFileDescriptor openTun(){
         VpnService.Builder builder = mVpnService.getBuilder();
@@ -901,7 +901,7 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
         if (!TextUtils.isEmpty(DNS2)) {
             builder.addDnsServer(DNS2);
         }
-        builder.addDnsServer("8.8.8.8");
+//        builder.addDnsServer("8.8.8.8");
 
         mLastTunCfg = getTunConfigString();
         // Reset information
@@ -1005,7 +1005,7 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
 
     public void onOpenVpnReconnecting() {
         Logger.logInfo("OpenVPN engine told us it is reconnecting ");
-        if(mRemoteConnection.isConnected()) {
+        if(mRemoteConnection != null && mRemoteConnection.isConnected()) {
            guiHandler.post(()->{
                mVpnService.onReconnecting();
            });

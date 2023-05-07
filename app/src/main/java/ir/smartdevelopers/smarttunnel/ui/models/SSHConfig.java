@@ -1,5 +1,9 @@
 package ir.smartdevelopers.smarttunnel.ui.models;
 
+import android.content.pm.PackageManager;
+import android.net.IpPrefix;
+import android.net.VpnService;
+import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.text.TextUtils;
 
@@ -9,9 +13,18 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
+import de.blinkt.openvpn.VpnProfile;
+import de.blinkt.openvpn.core.CIDRIP;
+import de.blinkt.openvpn.core.NetworkSpace;
+import de.blinkt.openvpn.core.VpnStatus;
 import ir.smartdevelopers.smarttunnel.MyVpnService;
+import ir.smartdevelopers.smarttunnel.R;
 import ir.smartdevelopers.smarttunnel.channels.JschRemoteConnection;
 import ir.smartdevelopers.smarttunnel.channels.RemoteConnection;
 import ir.smartdevelopers.smarttunnel.exceptions.RemoteConnectionException;
@@ -22,6 +35,8 @@ import ir.smartdevelopers.smarttunnel.packet.Packet;
 import ir.smartdevelopers.smarttunnel.ui.classes.AcceptAllHostRepo;
 import ir.smartdevelopers.smarttunnel.ui.classes.LocalReader;
 import ir.smartdevelopers.smarttunnel.ui.exceptions.ConfigException;
+import ir.smartdevelopers.smarttunnel.ui.utils.PrefsUtil;
+import ir.smartdevelopers.smarttunnel.utils.Logger;
 
 public class SSHConfig extends Config {
     /**
@@ -130,8 +145,21 @@ public class SSHConfig extends Config {
                     }
                 }
             }
+            String dns = null;
+            String dns1 = PrefsUtil.getDNS1(mVpnService.getApplicationContext());
+            if (!TextUtils.isEmpty(dns1)){
+                dns = dns1;
+            }else {
+                String dns2 = PrefsUtil.getDNS2(mVpnService.getApplicationContext());
+                if (!TextUtils.isEmpty(dns2)){
+                    dns = dns2;
+                }
+            }
+            if (dns == null){
+                throw new ConfigException("DNS not set");
+            }
             JschRemoteConnection connection = new JschRemoteConnection(proxifiedAddress,proxifiedPort,mUsername,mPassword,
-                    isServerAddressLocked(), isServerPortLocked(), isUsernameLocked(),"8.8.8.8",false);
+                    isServerAddressLocked(), isServerPortLocked(), isUsernameLocked(),dns,preferIPv6);
             connection.setPrivateKey(privateKey);
             mRemoteConnection = connection;
             if (getProxy() instanceof HttpProxy) {
@@ -144,7 +172,12 @@ public class SSHConfig extends Config {
             ServerPacketListener serverPacketListener = new ServerPacketListener(this);
             ChannelManager channelManager = new SshChannelManager(mRemoteConnection,mUDPGWPort);
             mPacketManager = new PacketManager(serverPacketListener,channelManager);
-
+            mFileDescriptor = openTun();
+            mLocalIn = new FileInputStream(mFileDescriptor.getFileDescriptor());
+            mLocalOut = new FileOutputStream(mFileDescriptor.getFileDescriptor());
+            mLocalReader = new LocalReader(mLocalIn,this,mPacketManager);
+            mLocalReader.start();
+            mVpnService.onConnect();
 
 
         } catch (RemoteConnectionException e) {
@@ -168,23 +201,119 @@ public class SSHConfig extends Config {
         proxy.setPort(localPort);
     }
 
-    @Override
-    public void setFileDescriptor(ParcelFileDescriptor fileDescriptor) {
-        super.setFileDescriptor(fileDescriptor);
-        mLocalIn = new FileInputStream(fileDescriptor.getFileDescriptor());
-        mLocalOut = new FileOutputStream(fileDescriptor.getFileDescriptor());
-        mLocalReader = new LocalReader(mLocalIn,this,mPacketManager);
-        mLocalReader.start();
+    public ParcelFileDescriptor openTun(){
+        VpnService.Builder builder = mVpnService.getBuilder();
+        final String PRIVATE_VLAN4_CLIENT = "10.0.0.1";
+        final String PRIVATE_VLAN4_ROUTER = "0.0.0.0";
+
+        final String PRIVATE_VLAN6_CLIENT = "fc00::1";
+        final String PRIVATE_VLAN6_ROUTER = "::";
+        final String PRIVATE_NETMASK = "255.255.255.0";
+        final int PRIVATE_MTU = 1500;
+
+        builder.addAddress(PRIVATE_VLAN4_CLIENT,24);
+        builder.addAddress(PRIVATE_VLAN6_CLIENT,64);
+        builder.addRoute(PRIVATE_VLAN4_ROUTER,0);
+        builder.addRoute(PRIVATE_VLAN6_ROUTER,0);
+
+        builder.setSession("SmartTunnel").setMtu(PRIVATE_MTU);
+
+        PackageManager packageManager = mVpnService.getPackageManager();
+        // allow selected apps to use vpn
+        Set<String> selectedApps = PrefsUtil.getSelectedApps(mVpnService.getApplicationContext());
+        Set<String> forbiddenApps = PrefsUtil.getForbiddenApps(mVpnService.getApplicationContext());
+
+        if (PrefsUtil.isAllowSelectedAppsEnabled(mVpnService.getApplicationContext())) {
+            if (selectedApps.isEmpty()){
+                for (String app : forbiddenApps) {
+                    try {
+                        packageManager.getPackageInfo(app, 0);
+                        builder.addDisallowedApplication(app);
+                    } catch (PackageManager.NameNotFoundException ignore) {
+                    }
+                }
+            }else {
+                for (String app : selectedApps) {
+                    if (forbiddenApps.contains(app)) {
+                        continue;
+                    }
+                    try {
+                        packageManager.getPackageInfo(app, 0);
+                        builder.addAllowedApplication(app);
+                    } catch (PackageManager.NameNotFoundException ignore) {
+                    }
+                }
+            }
+
+        } else {
+            Set<String> allDisallowedApps = new HashSet<>(selectedApps);
+            allDisallowedApps.addAll(forbiddenApps);
+            for (String app : allDisallowedApps) {
+                try {
+                    packageManager.getPackageInfo(app, 0);
+                    builder.addDisallowedApplication(app);
+                } catch (PackageManager.NameNotFoundException ignore) {
+                }
+            }
+        }
+        if (PrefsUtil.isAllowSelectedAppsEnabled(mVpnService.getApplicationContext())){
+            // show selected apps as allowed apps in log
+            Logger.logMessage(new LogItem("Allowed apps : "+ Arrays.toString(selectedApps.toArray())));
+        }else {
+            // show selected apps as disallowed apps in log
+            Logger.logMessage(new LogItem("Disallowed apps : "+ Arrays.toString(selectedApps.toArray())));
+
+        }
+
+//            builder.addAllowedApplication("ir.smartdevelopers.tcptest")
+//            builder.addAllowedApplication("com.android.chrome");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+            // VPN always uses the default network
+            builder.setUnderlyingNetworks(null);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // Setting this false, will cause the VPN to inherit the underlying network metered
+            // value
+            builder.setMetered(false);
+        }
+
+        String DNS1 = PrefsUtil.getDNS1(mVpnService.getApplicationContext());
+        if (!TextUtils.isEmpty(DNS1)) {
+            builder.addDnsServer(DNS1);
+        }
+        String DNS2 = PrefsUtil.getDNS1(mVpnService.getApplicationContext());
+        if (!TextUtils.isEmpty(DNS2)) {
+            builder.addDnsServer(DNS2);
+        }
+//        builder.addDnsServer("8.8.8.8");
+
+        builder.setConfigureIntent(mVpnService.getMainIntent());
+        try {
+            //Debug.stopMethodTracing();
+            ParcelFileDescriptor tun = builder.establish();
+            Logger.logMessage(new LogItem("TUN established"));
+            if (tun == null)
+                throw new NullPointerException("Android establish() method returned null (Really broken network configuration?)");
+            return tun;
+        } catch (Exception e) {
+            Logger.logError(mVpnService.getString(R.string.tun_open_error));
+            Logger.logError(mVpnService.getString(R.string.error) + e.getLocalizedMessage());
+            return null;
+        }
     }
 
     @Override
     public ParcelFileDescriptor getFileDescriptor() {
-        return null;
+
+        return mFileDescriptor;
     }
 
     @Override
     public Socket getMainSocket() {
 
+        if (mRemoteConnection == null){
+            return null;
+        }
         return mRemoteConnection.getMainSocket();
     }
 

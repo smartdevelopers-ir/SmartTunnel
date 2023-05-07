@@ -11,8 +11,8 @@ android {
         applicationId "ir.smartdevelopers.smarttunnel"
         minSdk 21
         targetSdk 33
-        versionCode 1
-        versionName "1.0.1"
+        versionCode 4
+        versionName "1.0.3"
         dimension = "implementation"
         buildConfigField("boolean", "openvpn3", "true")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

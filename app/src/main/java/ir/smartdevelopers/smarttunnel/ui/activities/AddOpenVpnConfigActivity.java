@@ -123,6 +123,7 @@ public class AddOpenVpnConfigActivity extends AppCompatActivity {
                 }
             }
         }
+
     }
 
     private SSHConfig.Builder getSshConfig(OpenVpnConfig.Builder builder) {

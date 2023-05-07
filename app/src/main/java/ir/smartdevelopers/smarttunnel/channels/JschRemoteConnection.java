@@ -34,6 +34,7 @@ import ir.smartdevelopers.smarttunnel.ui.models.LogItem;
 import ir.smartdevelopers.smarttunnel.ui.models.PrivateKey;
 import ir.smartdevelopers.smarttunnel.ui.models.Proxy;
 import ir.smartdevelopers.smarttunnel.ui.utils.DNSUtil;
+import ir.smartdevelopers.smarttunnel.ui.utils.Util;
 import ir.smartdevelopers.smarttunnel.utils.Logger;
 
 public class JschRemoteConnection extends RemoteConnection {
@@ -156,7 +157,7 @@ public class JschRemoteConnection extends RemoteConnection {
         }catch (Exception e){
             Logger.logStyledMessage("connection to SSH server failed","#FFBA44",true);
             if (e instanceof JSchException){
-                if (Objects.equals("Auth fail",e.getMessage())){
+                if (Util.contains(e.getMessage(),"Auth fail") || Util.contains(e.getMessage(),"Auth cancel")){
                     Logger.logStyledMessage("Authentication failed","#FFBA44",true);
                     throw  new RemoteConnectionException(new AuthFailedException());
                 }
@@ -231,17 +232,25 @@ public class JschRemoteConnection extends RemoteConnection {
 
         @Override
         public void start() throws RemoteConnectionException {
-            if (localAddress == null){
-                localAddress = "127.0.0.1";
-            }
-            localPort = startLocalPortForwarding(localAddress, localPort, remoteAddress, remotePort);
+
+
+//            if (localAddress == null){
+//                localAddress = "127.0.0.1";
+//            }
+//            localPort = startLocalPortForwarding(localAddress, localPort, remoteAddress, remotePort);
             try {
-                mSocket = new Socket();
-                mSocket.setTcpNoDelay(true);
-                mSocket.setReceiveBufferSize(Packet.MAX_SIZE);
-                mSocket.connect(new InetSocketAddress(localAddress, localPort));
-                setRemoteIn(mSocket.getInputStream());
-                setRemoteOut(mSocket.getOutputStream());
+                mChannel = (ChannelDirectTCPIP) mSession.openChannel("direct-tcpip");
+                setRemoteIn(mChannel.getInputStream());
+                setRemoteOut(mChannel.getOutputStream());
+                mChannel.setHost(remoteAddress);
+                mChannel.setPort(remotePort);
+                mChannel.connect(10000);
+
+//                mSocket = new Socket();
+//                mSocket.setTcpNoDelay(true);
+////                mSocket.setReceiveBufferSize(Packet.MAX_SIZE);
+//                mSocket.connect(new InetSocketAddress(localAddress, localPort));
+
             } catch (Exception e) {
                 stop();
                 throw new RemoteConnectionException(e);
@@ -273,10 +282,14 @@ public class JschRemoteConnection extends RemoteConnection {
 
         @Override
         public boolean isConnected() {
-            if (mSocket == null){
-                return false;
+//            if (mSocket == null){
+//                return false;
+//            }
+//            return mSocket.isConnected();
+            if (mChannel !=null){
+                return mChannel.isConnected();
             }
-            return mSocket.isConnected();
+            return false;
         }
     }
 

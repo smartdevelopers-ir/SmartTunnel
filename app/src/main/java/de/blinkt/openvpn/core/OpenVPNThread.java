@@ -111,9 +111,10 @@ public class OpenVPNThread implements Runnable {
 //            }
 
             if (!mNoProcessExitStatus) {
-                if (mWeakContext.get() != null){
-                    MyVpnService.reconnect(mWeakContext.get());
-                }
+                // open vpn stopped
+//                if (mWeakContext.get() != null){
+//                    MyVpnService.reconnect(mWeakContext.get());
+//                }
             }
             Log.i(TAG, "Exiting");
         }

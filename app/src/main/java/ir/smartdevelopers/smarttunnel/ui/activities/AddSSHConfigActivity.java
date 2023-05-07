@@ -118,7 +118,7 @@ public class AddSSHConfigActivity extends AppCompatActivity {
     private void showAdvancedSSHSettingsFragment(boolean animate,Bundle data) {
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         if (animate) {
-            transaction.setCustomAnimations(R.anim.fragment_slide_left_to_right_enter, R.anim.fragment_slide_left_to_right_exit);
+            transaction.setCustomAnimations(R.anim.fragment_slide_right_to_left_enter, R.anim.fragment_slide_right_to_left_exit);
         }
        transaction.replace(R.id.sshConfigFragmentContainer, AdvancedSSHConfigFragment.class,data)
                 .commit();

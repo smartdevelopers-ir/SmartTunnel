@@ -1,13 +1,20 @@
 package ir.smartdevelopers.smarttunnel.ui.fragments;
 
 import android.app.Activity;
+import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Pair;
+import android.view.ContextMenu;
+import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResult;
@@ -17,6 +24,9 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+
+import androidx.appcompat.view.ContextThemeWrapper;
+import androidx.appcompat.widget.PopupMenu;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -190,7 +200,7 @@ public class ConfigsFragment extends Fragment {
         });
         mBinding.toolbar.setOnMenuItemClickListener(item -> {
             if (item.getItemId() == R.id.action_add){
-                openAddConfigActivity(OpenVpnConfig.CONFIG_TYPE);
+                showAddConfigMenu();
             } else if (item.getItemId() == R.id.action_import) {
                 openImportActivity();
             }
@@ -201,6 +211,32 @@ public class ConfigsFragment extends Fragment {
         }else {
             mBinding.txtNoConfigMessage.setVisibility(View.GONE);
         }
+    }
+
+    private void showAddConfigMenu() {
+        View addItemView = mBinding.toolbar.findViewById(R.id.action_add);
+        if (addItemView == null ){
+            return;
+        }
+
+        Context wrapper = new ContextThemeWrapper(requireContext(),R.style.Theme_SmartTunnel_PopupMenuTheme);
+        PopupMenu popupMenu = new PopupMenu(wrapper,addItemView);
+        popupMenu.getMenu().add(0,R.id.action_open_vpn_over_ssh,0,R.string.open_vpn_over_ssh);
+        popupMenu.getMenu().add(0,R.id.action_ssh_tunnel,0,R.string.ssh_tunnel);
+        popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                if (item.getItemId() == R.id.action_open_vpn_over_ssh){
+                    openAddConfigActivity(OpenVpnConfig.CONFIG_TYPE);
+                }else if (item.getItemId() == R.id.action_ssh_tunnel){
+                    openAddConfigActivity(SSHConfig.CONFIG_TYPE);
+                }
+                return true;
+            }
+        });
+
+        popupMenu.show();
+
     }
 
     private void openImportActivity() {

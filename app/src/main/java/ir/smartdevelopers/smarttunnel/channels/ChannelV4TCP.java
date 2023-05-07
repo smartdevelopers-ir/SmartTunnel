@@ -42,6 +42,8 @@ public abstract class ChannelV4TCP extends Channel implements TCPController.TcpL
     protected TCPController mTCPController;
     /** This is IP header identification, we must increase by 1 for every packet sent to client */
     private short mIpIdentification;
+    private boolean mRemoteInClosed;
+    private boolean mRemoteOutClosed;
 
     public ChannelV4TCP(String id, PacketV4 packetV4,  ChannelManager channelManager) {
         super(id, packetV4.getTransmissionProtocol().getSourcePort()
@@ -113,7 +115,7 @@ public abstract class ChannelV4TCP extends Channel implements TCPController.TcpL
 
                     if (pkw.getPacket().getData() != null && pkw.getPacket().getData().length > 0) {
                         try {
-                            Logger.logPacket("toRemote",pkw.getPacket());
+
                             mRemoteOut.write(pkw.getPacket().getData());
                             if (pkw.isPush()) {
                                 mRemoteOut.flush();
@@ -147,8 +149,11 @@ public abstract class ChannelV4TCP extends Channel implements TCPController.TcpL
             Logger.logError(message);
         }
 
+        mRemoteOutClosed = true;
+        if (mRemoteInClosed){
+            close();
+        }
 
-        this.close();
     }
 
     /**
@@ -211,11 +216,16 @@ public abstract class ChannelV4TCP extends Channel implements TCPController.TcpL
                         }
                     }
                 } catch (IOException e) {
-                    Logger.logDebug(e.getMessage());
+                    if (e.getLocalizedMessage() != null){
+                        Logger.logDebug(e.getLocalizedMessage());
+                    }
                 }
             }
 
-            close();
+            mRemoteInClosed = true;
+            if (mRemoteOutClosed){
+                close();
+            }
 
         }
     }

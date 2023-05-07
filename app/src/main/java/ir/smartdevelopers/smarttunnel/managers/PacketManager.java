@@ -74,7 +74,6 @@ public class PacketManager {
                     }
                     Packet packet =mPacketsQueue.poll();
                     if (packet != null){
-                        Logger.logPacket("toLocal",packet);
                         mServerPacketListener.onPacketFromServer(packet);
                     }else {
                         mWriterLock.acquire();

@@ -32,6 +32,7 @@ import com.google.gson.Gson;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Objects;
 
 import de.blinkt.openvpn.core.NetworkUtils;
 import ir.smartdevelopers.smarttunnel.exceptions.RemoteConnectionException;
@@ -46,26 +47,27 @@ import ir.smartdevelopers.smarttunnel.ui.models.LogItem;
 import ir.smartdevelopers.smarttunnel.ui.models.Proxy;
 import ir.smartdevelopers.smarttunnel.ui.models.ProxyType;
 import ir.smartdevelopers.smarttunnel.ui.models.SSHProxy;
+import ir.smartdevelopers.smarttunnel.ui.utils.AlertUtil;
 import ir.smartdevelopers.smarttunnel.ui.utils.ConfigsUtil;
 import ir.smartdevelopers.smarttunnel.ui.utils.PrefsUtil;
 import ir.smartdevelopers.smarttunnel.ui.utils.Util;
 import ir.smartdevelopers.smarttunnel.utils.Logger;
 
 public class MyVpnService extends VpnService implements NetworkStateReceiver.Callback {
-    public static final String START_SERVICE = "de.blinkt.openvpn.START_SERVICE";
 
     public static final int COMMAND_CONNECT = 1;
     public static final int COMMAND_DISCONNECT = 2;
     public static final int COMMAND_RECONNECT = 3;
+    public static final int MODE_CONNECT= 200;
+    public static final int MODE_RECONNECT= 201;
     private static final int MAX_PACKET_SIZE = Short.MAX_VALUE;
     public static final String ACTION_CONNECTED = "connected";
     public static final String ACTION_DISCONNECTED = "disconnected";
     public static final String ACTION_CONNECTING = "connecting";
-    private static final String ACTION_RETRYING = "retrying";
-    private static final String ACTION_DISCONNECTING = "disconnecting";
+    public static final String ACTION_RETRYING = "retrying";
+    public static final String ACTION_DISCONNECTING = "disconnecting";
     private static final int NOTIFICATION_ID = 50;
     public static final String NOTIFICATION_CHANNEL_BG_ID = "smart_tunnel_notification_bg";
-    private ParcelFileDescriptor vpnInterface = null;
     private static final String PRIVATE_VLAN4_CLIENT = "10.0.0.1";
     private static final String PRIVATE_VLAN4_ROUTER = "10.0.0.2";
 
@@ -77,6 +79,7 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
     private static final int PRIVATE_MTU = 1500;
     private boolean mStopService;
 
+    private final Object mConnectLock = new Object();
     private ConnectivityManager connectivityManager;
     private HandlerThread mServiceThread;
     private Handler mUiThreadHandler;
@@ -87,7 +90,6 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
     private VpnBinder mBinder;
     private int retryWaitTime = 0;
     private int retryCount = 0;
-    private boolean isInConnectProcess = false;
     private NetworkStateReceiver mNetworkStateReceiver;
     /**
      * Connection status
@@ -147,10 +149,15 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
         @Override
         public void handleMessage(@NonNull Message msg) {
             Intent intent = (Intent) msg.obj;
+
             switch (msg.what) {
                 case COMMAND_CONNECT:
                     mConfigId = intent.getStringExtra("config_id");
                     mConfigType = intent.getStringExtra("config_type");
+                    int mode = intent.getIntExtra("connect_mod",MODE_CONNECT);
+                    if (mode == MODE_CONNECT){
+                        mStopService = false;
+                    }
                     connect(mConfigId, mConfigType);
                     break;
                 case COMMAND_DISCONNECT:
@@ -175,10 +182,10 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
 
         @Override
         public void run() {
-            if (mStopService){
+            if (mStatus == Status.DISCONNECTING || mStatus == Status.DISCONNECTED ){
                 return;
             }
-            connect(getApplicationContext(), configId, configType);
+            connect(getApplicationContext(), configId, configType,MODE_RECONNECT);
         }
     }
     private RetryRunnable mRetryRunnable;
@@ -189,12 +196,13 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
             forceDisconnect();
             return;
         }
+        if (mStatus == Status.DISCONNECTING || mStatus == Status.DISCONNECTED || mStatus == Status.RETRYING){
+            return;
+        }
         if (mStopService) {
             return;
         }
-        if (isInConnectProcess) {
-            return;
-        }
+
         Logger.logMessage(new LogItem("Reconnecting ..."));
         sendStatusChangedSignal(Status.RETRYING);
         if (retryCount % 3 == 0) {
@@ -208,11 +216,12 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
         mRetryRunnable = new RetryRunnable(mConfigId,mConfigType);
         if (retryWaitTime > 0) {
             Logger.logMessage(new LogItem(String.format("[VPNService] waiting for %d seconds before retying...", retryWaitTime)));
-            mUiThreadHandler.postDelayed(mRetryRunnable ,retryWaitTime * 1000L);
         }
+        mUiThreadHandler.postDelayed(mRetryRunnable ,retryWaitTime * 1000L);
 
 
     }
+
 
     public void forceDisconnect() {
         disconnect(true);
@@ -222,16 +231,17 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
         if (mStatus == Status.NETWORK_ERROR && !byUser) {
             return;
         }
+        sendStatusChangedSignal(Status.DISCONNECTING);
         mStopService = true;
 //        mStatus = Status.DISCONNECTED;
         retryCount = 0;
         retryWaitTime = 0;
-        Logger.logStyledMessage("YOU ARE DISCONNECTED", "red", true);
-        sendStatusChangedSignal(Status.DISCONNECTED);
         if (mRetryRunnable != null){
             mUiThreadHandler.removeCallbacks(mRetryRunnable);
         }
         terminate();
+        Logger.logStyledMessage("YOU ARE DISCONNECTED", "red", true);
+        sendStatusChangedSignal(Status.DISCONNECTED);
         stopForeground(true);
         stopSelf();
 
@@ -243,13 +253,7 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
         if (mCurrentConfig != null) {
             mCurrentConfig.cancel();
         }
-        if (vpnInterface != null) {
-            try {
-                vpnInterface.close();
-            } catch (IOException ignore) {
 
-            }
-        }
 
     }
 
@@ -271,89 +275,93 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
+        if (intent != null && Objects.equals(intent.getAction(),SERVICE_INTERFACE)){
+            return super.onBind(intent);
+        }
         return mBinder;
+
     }
 
     @SuppressLint("DefaultLocale")
-    private void connect(String configId, String configType) {
+    private  void connect(String configId, String configType) {
 
         if (mStatus == Status.NETWORK_ERROR || !NetworkUtils.isConnected(getApplicationContext())) {
+            mStatus = Status.NETWORK_ERROR;
             return;
         }
-        if (isInConnectProcess) {
-            return;
-        }
+
         if (mConfigType == null || mConfigId == null){
             return;
         }
         if (mStopService){
-            mStopService = false;
             return;
         }
-//        mStatus = Status.CONNECTING;
 
-        isInConnectProcess = true;
-        sendStatusChangedSignal(Status.CONNECTING);
+        synchronized (mConnectLock) {
+            if (mStopService){
+                return;
+            }
+            if (mStatus == Status.CONNECTED){
+                return;
+            }
+            sendStatusChangedSignal(Status.CONNECTING);
 
-        try {
-            Logger.logMessage(new LogItem("[VPNService] start connecting..."));
-            mCurrentConfig = ConfigsUtil.loadConfig(getApplicationContext(), configId, configType);
+            try {
+                Logger.logMessage(new LogItem("[VPNService] start connecting..."));
+                mCurrentConfig = ConfigsUtil.loadConfig(getApplicationContext(), configId, configType);
 //                GoTun2SocksConfig config = new GoTun2SocksConfig("squid_conf", "sqid_id",
 //                        new HttpProxy("127.0.0.1", 1080), "s3.goolha.tk", 2232,
 //                        "mostafa", "mosi.1371", false, null, 7600);
 //                mCurrentConfig = config;
 
-            Proxy globalProxy = loadProxy();
-            if (globalProxy != null) {
-                mCurrentConfig.setProxy(globalProxy);
-            }
-        } catch (Exception e) {
-            Logger.logError(getString(R.string.can_not_read_config));
-            isInConnectProcess = false;
-            forceDisconnect();
-            return;
-        }
-        if (mCurrentConfig == null) {
-            isInConnectProcess = false;
-            forceDisconnect();
-            return;
-        }
-        mCurrentConfig.setVpnService(this);
-        try {
-            mCurrentConfig.connect();
-            Socket socket = mCurrentConfig.getMainSocket();
-            if (socket != null) {
-                protect(mCurrentConfig.getMainSocket());
-            }
-        } catch (ConfigException e) {
-            if (mStatus == Status.NETWORK_ERROR || !NetworkUtils.isConnected(getApplicationContext())) {
+                Proxy globalProxy = loadProxy();
+                if (globalProxy != null) {
+                    mCurrentConfig.setProxy(globalProxy);
+                }
+            } catch (Exception e) {
+                Logger.logError(getString(R.string.can_not_read_config));
+                forceDisconnect();
                 return;
             }
-            isInConnectProcess = false;
-            if (e.getCause() instanceof RemoteConnectionException) {
-                if (e.getCause().getCause() instanceof AuthFailedException) {
-                    Logger.logStyledMessage("SSH server auhtentication failed", "#B83127", true);
-                    Toast.makeText(this, R.string.authentication_failed_message, Toast.LENGTH_SHORT).show();
-                    forceDisconnect();
+            if (mCurrentConfig == null) {
+                forceDisconnect();
+                return;
+            }
+            mCurrentConfig.setVpnService(this);
+            try {
+                mCurrentConfig.connect();
+                Socket socket = mCurrentConfig.getMainSocket();
+                if (socket != null) {
+                    protect(mCurrentConfig.getMainSocket());
+                }
+            } catch (ConfigException e) {
+                if (mStatus == Status.NETWORK_ERROR || !NetworkUtils.isConnected(getApplicationContext())) {
                     return;
                 }
-            }
-            String message = null;
-            Throwable t = e;
-            while (message == null){
-                if (t != null){
-                    message = t.getMessage();
+                if (e.getCause() instanceof RemoteConnectionException) {
+                    if (e.getCause().getCause() instanceof AuthFailedException) {
+                        Logger.logStyledMessage("SSH server auhtentication failed", "#B83127", true);
+                        AlertUtil.showToast(this, R.string.authentication_failed_message, Toast.LENGTH_LONG, AlertUtil.Type.ERROR);
+                        forceDisconnect();
+                        return;
+                    }
                 }
-                if (message == null){
-                    t = e.getCause();
+                String message = null;
+                Throwable t = e;
+                while (message == null) {
+                    if (t != null) {
+                        message = t.getMessage();
+                    }
+                    if (message == null) {
+                        t = e.getCause();
+                    }
                 }
+                Logger.logMessage(new LogItem(String.format("Error in connection : " + message)));
+
+                retry();
+
             }
-            Logger.logMessage(new LogItem(String.format("Error in connection : "+ message)));
-
-            retry();
-
         }
-
 
 
     }
@@ -361,7 +369,6 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
     public void onConnect() {
         retryCount = 0;
         retryWaitTime = 0;
-        isInConnectProcess = false;
 //        mStatus = Status.CONNECTED;
         sendStatusChangedSignal(Status.CONNECTED);
         Logger.logStyledMessage("YOU ARE CONNECTED", "green", true);
@@ -377,6 +384,9 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
     public void onNetworkDisconnected() {
         Logger.logMessage(new LogItem("Network is disconnected. Wating for connecting again"));
 //        mStatus = Status.NETWORK_ERROR;
+        if (mStatus == Status.DISCONNECTED || mStatus == Status.DISCONNECTING){
+            return;
+        }
         sendStatusChangedSignal(Status.NETWORK_ERROR);
         retryCount = 0;
         retryWaitTime = 0;
@@ -549,7 +559,8 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
                 .setSound(null)
                 .setVibrate(null)
                 .setContentText(contentText)
-                .setContentTitle(getString(R.string.app_name));
+                .setContentTitle(getString(R.string.app_name))
+                .setContentIntent(getMainIntent());
         return builder.build();
     }
     private static final int ACTION_DISCONNECT_ID = 2300;
@@ -580,6 +591,11 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
         super.onDestroy();
     }
 
+    @Override
+    public void onRevoke() {
+        super.onRevoke();
+        forceDisconnect();
+    }
 
     public static class VpnBinder extends Binder {
         private MyVpnService vpnService;
@@ -593,12 +609,13 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
         }
     }
 
-    public static void connect(Context context, String configId, String configType) {
+    public static void connect(Context context, String configId, String configType,int connectionMode) {
 
         Intent startIntent = new Intent(context, MyVpnService.class);
         startIntent.putExtra("command", COMMAND_CONNECT);
         startIntent.putExtra("config_id", configId);
         startIntent.putExtra("config_type", configType);
+        startIntent.putExtra("connect_mod", connectionMode);
         ContextCompat.startForegroundService(context, startIntent);
     }
 

@@ -32,6 +32,9 @@ public class SmartTunnelApp extends Application {
     private final String[] defaultSelectedApps = {
             "com.android.vending",
             "com.google.android.gms",
+            "org.telegram.messenger",
+            "com.whatsapp",
+            "com.instagram.android",
     };
     @Override
     public void onCreate() {
