@@ -19,6 +19,7 @@ public class ConfigListAdapter extends RecyclerView.Adapter<ConfigListAdapter.Co
     private List<ConfigListModel> mModels;
     private OnListItemClickListener<ConfigListModel> mOnDeleteClickListener;
     private OnListItemClickListener<ConfigListModel> mOnEditClickListener;
+    private OnListItemClickListener<ConfigListModel> mOnLongClickListener;
     private OnConfigChangeListener mOnConfigChangeListener;
     private boolean disabled;
 
@@ -91,6 +92,11 @@ public class ConfigListAdapter extends RecyclerView.Adapter<ConfigListAdapter.Co
         }
     }
 
+    public ConfigListAdapter setOnLongClickListener(OnListItemClickListener<ConfigListModel> onLongClickListener) {
+        mOnLongClickListener = onLongClickListener;
+        return this;
+    }
+
     class ConfigViewHolder extends RecyclerView.ViewHolder {
         ItemConfigListBinding mBinding;
         public ConfigViewHolder(@NonNull ItemConfigListBinding binding) {
@@ -110,6 +116,15 @@ public class ConfigListAdapter extends RecyclerView.Adapter<ConfigListAdapter.Co
                 if (!disabled){
                     setSelected(mModels.get(getAdapterPosition()));
                 }
+            });
+            mBinding.getRoot().setOnLongClickListener(v->{
+                if (!disabled){
+                    if (mOnLongClickListener != null) {
+                        mOnLongClickListener.onItemClicked(itemView,mModels.get(getAdapterPosition()),getAdapterPosition());
+                        return true;
+                    }
+                }
+                return false;
             });
         }
         void bindView(ConfigListModel model){

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Smart Tunnel</string>
+    <string name="tap_to_connect">برای اتصال کلیک کنید</string>
+    <string name="connecting_">در حال اتصال...</string>
+    <string name="connected">شما متصل هستید !</string>
+    <string name="config_list_empty_message">شما در حال حاضر هیچ کانفیگی ندارید. برای اضافه کردن بر روی دگمه + و  یا برای وارد کردن کانفیگ بر روی دکمه import کلیک کنید</string>
+    <string name="waiting_for_network">انتظار برای آنلاین شدن</string>
+    <string name="selecet_config">شما هیچ کانفیگی انتخاب نکرده اید</string>
+    <string name="selected_app_use_vpn">برنامه های انتخاب شده از VPN استفاده کنند</string>
+    <string name="selected_app_dont_use_vpn">برنامه های انتخاب شده از VPN استفاده نکنند</string>
+    <string name="file_exists_message">فایل با این اسم وجود دارد. آیا میخواهید جایگزین فایل فعلی شود؟</string>
+    <string name="file_exists_title">جایگزینی فایل</string>
+    <string name="replace">جایگزینی</string>
+    <string name="cancel">لغو</string>
+    <string name="config_already_exists">کانفیگ در حال حاضر وجود دارد.</string>
+    <string name="retrying">تلاش دوباره...</string>
+    <string name="disconncting">در حال لغو اتصال...</string>
+    <string name="update_available_message">نسخه جدید برنامه موجود میباشد. لطفا برنامه را بروزرسانی نمایید</string>
+    <string name="update_available_title">آپدیت جدید</string>
+    <string name="update">بروزرسانی</string>
+    <string name="download_update_descriptin">در حال دانلود بروزرسانی Smart Tunnel</string>
+    <string name="expire_date_message">اکانت شما در %d روز ، %d ساعت و %d دقیقه دیگر منقضی میشود</string>
+    <string name="expire_date">تاریخ انقضا</string>
+</resources>

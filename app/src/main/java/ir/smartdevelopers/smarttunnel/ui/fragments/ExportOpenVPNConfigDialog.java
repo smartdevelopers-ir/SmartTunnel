@@ -29,13 +29,10 @@ import ir.smartdevelopers.smarttunnel.R;
 import ir.smartdevelopers.smarttunnel.databinding.DialogSshConfigExportBinding;
 import ir.smartdevelopers.smarttunnel.ui.interfaces.OnCompleteListener;
 import ir.smartdevelopers.smarttunnel.ui.models.OpenVpnConfig;
-import ir.smartdevelopers.smarttunnel.ui.models.SSHConfig;
-import ir.smartdevelopers.smarttunnel.ui.models.SSHProxy;
 import ir.smartdevelopers.smarttunnel.ui.utils.ConfigsUtil;
 import ir.smartdevelopers.smarttunnel.ui.utils.PrefsUtil;
 import ir.smartdevelopers.smarttunnel.ui.utils.Util;
 import ir.smartdevelopers.smarttunnel.ui.viewModels.AddOpenVPNConfigViewModel;
-import ir.smartdevelopers.smarttunnel.ui.viewModels.AddSSHConfigViewModel;
 import ir.smartdevelopers.smarttunnel.ui.viewModels.SshConfigVieModel;
 
 public class ExportOpenVPNConfigDialog extends Fragment {
@@ -91,6 +88,7 @@ public class ExportOpenVPNConfigDialog extends Fragment {
                 selectAll(isChecked);
             }
         });
+        mBinding.edtNote.setText(PrefsUtil.getLastNoteExported(requireContext()));
     }
 
     private void selectAll(boolean isChecked) {
@@ -192,6 +190,9 @@ public class ExportOpenVPNConfigDialog extends Fragment {
     }
 
     private void export(String exportConfigJson, String configType, OutputStream outputStream) {
+        if (mBinding.edtNote.getText() != null){
+            PrefsUtil.setLastNoteExported(requireContext(),mBinding.edtNote.getText().toString());
+        }
         ConfigsUtil.exportConfig(exportConfigJson, configType, outputStream, new OnCompleteListener<Boolean>() {
             @Override
             public void onComplete(Boolean success) {

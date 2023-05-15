@@ -1,17 +1,18 @@
 package ir.smartdevelopers.smarttunnel;
 
-import androidx.appcompat.app.AppCompatActivity;
-
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkInfo;
 import android.net.VpnService;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 
-import com.sshtools.client.SshClient;
+import androidx.appcompat.app.AppCompatActivity;
 
 import org.xbill.DNS.DClass;
-import org.xbill.DNS.ExtendedResolver;
-import org.xbill.DNS.Lookup;
 import org.xbill.DNS.Message;
 import org.xbill.DNS.Name;
 import org.xbill.DNS.Record;
@@ -26,6 +27,7 @@ import java.io.InputStreamReader;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.net.Proxy;
 import java.net.URL;
 import java.util.concurrent.ExecutorService;
@@ -33,7 +35,6 @@ import java.util.concurrent.Executors;
 
 import javax.net.ssl.HttpsURLConnection;
 
-import ir.smartdevelopers.smarttunnel.databinding.ActivityMainBinding;
 import ir.smartdevelopers.smarttunnel.databinding.ActivityTestMainBinding;
 
 
@@ -48,12 +49,27 @@ public class TestMainActivity extends AppCompatActivity {
         mBinding = ActivityTestMainBinding.inflate(getLayoutInflater());
         setContentView(mBinding.getRoot());
 
-        SshClient client ;
         mBinding.btnConnect.setOnClickListener(v -> {
 
-            if (true){
-                throw new RuntimeException("test");
-            }
+            mExecutorService.execute(()->{
+                try {
+                    ConnectivityManager manager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+                    Network[] allNetworks = manager.getAllNetworks();
+                   Network active = findActiveNetwork(manager);
+                   String activeInterfaceName = manager.getLinkProperties(active).getInterfaceName();
+                    InetAddress[] addresses = InetAddress.getAllByName("google.com");
+                    NetworkInterface activeInterface = NetworkInterface.getByName(activeInterfaceName);
+                    for (InetAddress inadd : addresses){
+                        if (inadd instanceof Inet6Address){
+                            if (inadd.isReachable(100)){
+                                System.out.println("reched");
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
 
             // DNS
             try {
@@ -103,6 +119,22 @@ public class TestMainActivity extends AppCompatActivity {
         });
 
 
+    }
+    private Network findActiveNetwork(ConnectivityManager manager){
+        Network active=null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            active =manager.getActiveNetwork();
+        }else {
+            NetworkInfo activeInfo = manager.getActiveNetworkInfo();
+            Network[] allNetworks = manager.getAllNetworks();
+            for (Network network : allNetworks){
+                if (manager.getNetworkInfo(network).toString().equals(activeInfo.toString())){
+                    active = network;
+                    break;
+                }
+            }
+        }
+        return active;
     }
 
     private void connectToUrl() {

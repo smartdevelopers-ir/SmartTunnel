@@ -18,7 +18,6 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
-import android.os.ParcelFileDescriptor;
 import android.text.TextUtils;
 import android.widget.Toast;
 
@@ -30,8 +29,6 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.google.gson.Gson;
 
-import java.io.IOException;
-import java.net.Socket;
 import java.util.Objects;
 
 import de.blinkt.openvpn.core.NetworkUtils;
@@ -126,6 +123,8 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
         }
         mNetworkStateReceiver = new NetworkStateReceiver(this);
         registerDeviceStateReceiver(mNetworkStateReceiver);
+
+
     }
 
     private void initBroadcast() {
@@ -330,9 +329,9 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
             mCurrentConfig.setVpnService(this);
             try {
                 mCurrentConfig.connect();
-                Socket socket = mCurrentConfig.getMainSocket();
-                if (socket != null) {
-                    protect(mCurrentConfig.getMainSocket());
+                int mainSocketDescriptor = mCurrentConfig.getMainSocketDescriptor();
+                if (mainSocketDescriptor != -1) {
+                    protect(mCurrentConfig.getMainSocketDescriptor());
                 }
             } catch (ConfigException e) {
                 if (mStatus == Status.NETWORK_ERROR || !NetworkUtils.isConnected(getApplicationContext())) {
@@ -435,6 +434,11 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
             }
     }
 
+    public void onExpireDateReceived(String expireDate){
+        Intent intent = new Intent(MainActivity.ACTION_EXPIRE_DATE);
+        intent.putExtra("expire_date",expireDate);
+        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(intent);
+    }
     public Builder getBuilder() {
         Builder builder = new Builder();
         return builder;

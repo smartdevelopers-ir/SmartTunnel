@@ -1,11 +1,12 @@
 package ir.smartdevelopers.smarttunnel.channels;
 
+import static ir.smartdevelopers.smarttunnel.packet.TCP.State;
+
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import ir.smartdevelopers.smarttunnel.packet.Packet;
 import ir.smartdevelopers.smarttunnel.packet.PacketV4;
@@ -14,8 +15,6 @@ import ir.smartdevelopers.smarttunnel.packet.TCPFlag;
 import ir.smartdevelopers.smarttunnel.packet.TCPOption;
 import ir.smartdevelopers.smarttunnel.packet.TCPPacketQueue;
 import ir.smartdevelopers.smarttunnel.packet.TCPPacketWrapper;
-
-import static ir.smartdevelopers.smarttunnel.packet.TCP.*;
 
 public class TCPController {
     private static final int SERVER_MAX_SEGMENT_SIZE = 1400;
@@ -103,7 +102,7 @@ public class TCPController {
     }
     /** When tcp-direc channel connects we must call this method*/
     public void onChannelConnected(){
-//        mKeepAliveThread.start();
+        mKeepAliveThread.start();
         handshake();
     }
     public int getMaxSegmentSize(){
@@ -305,37 +304,36 @@ public class TCPController {
         }
     }
 
+    public void remoteClosed() {
+        sendFINPacket();
+    }
+
     private class PacketProcessor extends Thread {
-        private ConcurrentLinkedQueue<Packet> mPacketQueue;
-        /**
-         * When new packet is available we process it by releasing this lock
-         */
-        private Semaphore mNewPacketLock;
+        private final LinkedBlockingQueue<Packet> mPacketQueue;
 
         private PacketProcessor() {
-            mPacketQueue = new ConcurrentLinkedQueue<>();
-            mNewPacketLock = new Semaphore(0);
+            mPacketQueue = new LinkedBlockingQueue<>();
             setName(mName + "_packetProcessor");
 
         }
 
         public void onNewPacket(Packet packet) {
             mPacketQueue.add(packet);
-            mNewPacketLock.release();
         }
 
         @Override
         public void run() {
             while (true) {
-                try {
-                    mNewPacketLock.acquire();
-                } catch (InterruptedException e) {
-                    return;
-                }
+
                 if (interrupted()) {
                     return;
                 }
-                Packet pk = mPacketQueue.poll();
+                Packet pk = null;
+                try {
+                    pk = mPacketQueue.take();
+                } catch (InterruptedException e) {
+                    return;
+                }
                 if (pk == null) {
                     continue;
                 }
@@ -378,12 +376,14 @@ public class TCPController {
                                 sendACKToClient(option);
                                 continue;
                             }else {
+                                // discard packet . ignore it . it is duplicate packet
                                 continue;
                             }
                         }else if (newPacketFlag.RST == 1){
                             mTcpListener.onTermination();
                         }
 
+                        continue;
                     }
 
 

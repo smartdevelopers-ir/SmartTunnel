@@ -8,7 +8,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
 import android.net.VpnService;
 import android.os.Bundle;
@@ -31,7 +30,6 @@ import androidx.core.text.HtmlCompat;
 import androidx.fragment.app.Fragment;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import java.net.Proxy;
 import java.util.List;
 import java.util.Objects;
 
@@ -123,6 +121,7 @@ public class HomeFragment extends Fragment {
                             onConnecting();
                             break;
                         case MyVpnService.ACTION_CONNECTED:
+
                             onConnect();
                             break;
                     }
@@ -135,7 +134,12 @@ public class HomeFragment extends Fragment {
         statusReceiverFilter.addAction(MyVpnService.ACTION_CONNECTED);
         manager.registerReceiver(mStatusReceiver,statusReceiverFilter);
 
+
+
+
     }
+
+
 
     private void manageConnectButtonState() {
         if (mVpnService!=null){
@@ -184,7 +188,8 @@ public class HomeFragment extends Fragment {
 
         ConfigListModel currentConfig = PrefsUtil.getSelectedConfig(requireContext());
         if (currentConfig != null && !TextUtils.isEmpty(currentConfig.note)){
-            CharSequence note = HtmlCompat.fromHtml(currentConfig.note,HtmlCompat.FROM_HTML_MODE_COMPACT);
+            String htmlNote = currentConfig.note.replace("\n","<br />");
+            CharSequence note = HtmlCompat.fromHtml(htmlNote,HtmlCompat.FROM_HTML_MODE_COMPACT);
             mBinding.txtConfigNote.setText(note);
             mBinding.noteGroup.setVisibility(View.VISIBLE);
         }else {

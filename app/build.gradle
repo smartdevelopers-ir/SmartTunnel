@@ -11,13 +11,14 @@ android {
         applicationId "ir.smartdevelopers.smarttunnel"
         minSdk 21
         targetSdk 33
-        versionCode 4
-        versionName "1.0.3"
+        versionCode 6
+        versionName "1.1.1"
         dimension = "implementation"
-        buildConfigField("boolean", "openvpn3", "true")
+        buildConfigField("boolean", "openvpn3", "false")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
         setProperty("archivesBaseName", "SmartTunnel-$versionName")
+
     }
     buildFeatures {
         aidl = true
@@ -46,6 +47,7 @@ android {
     sourceSets {
         main{
             assets.setSrcDirs(["src/main/assets", "build/ovpnassets"])
+            jniLibs.srcDirs = ['libs']
         }
     }
 
@@ -56,30 +58,33 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.preference:preference:1.2.0'
     implementation 'androidx.documentfile:documentfile:1.0.1'
-    implementation 'com.google.android.material:material:1.8.0'
+    implementation 'com.google.android.material:material:1.9.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.work:work-runtime:2.8.1'
-    implementation 'com.android.support:multidex:1.0.3'
-    implementation files('libs/tun2socks.aar')
+    implementation 'androidx.multidex:multidex:2.0.1'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 //    implementation 'com.jcraft:jsch:0.1.55'
     implementation 'dnsjava:dnsjava:2.1.9'
     implementation 'commons-codec:commons-codec:1.15'
-    implementation 'com.google.code.gson:gson:2.8.6'
+    implementation 'com.google.code.gson:gson:2.10.1'
 // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
-    implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.7'
+//    implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.7'
 // https://mvnrepository.com/artifact/com.sshtools/maverick-synergy-client
-    implementation group: 'com.sshtools', name: 'maverick-synergy-client', version: '3.0.10'
+//    implementation group: 'com.sshtools', name: 'maverick-synergy-client', version: '3.0.10'
 // https://mvnrepository.com/artifact/com.hierynomus/sshj
-    implementation ('com.hierynomus:sshj:0.35.0'){
-        exclude group: 'com.jcraft', module: 'jzlib'
-    }
+//    implementation ('com.hierynomus:sshj:0.35.0'){
+//        exclude group: 'com.jcraft', module: 'jzlib'
+//    }
 
     implementation 'com.madgag.spongycastle:core:1.58.0.0'
 // https://mvnrepository.com/artifact/com.madgag.spongycastle/prov
     implementation 'com.madgag.spongycastle:prov:1.58.0.0'
+//    implementation 'com.getkeepsafe.relinker:relinker:1.4.4'
+
+
+
 
 
 }

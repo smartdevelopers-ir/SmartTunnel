@@ -22,18 +22,13 @@ import java.util.UUID;
 import de.blinkt.openvpn.VpnProfile;
 import ir.smartdevelopers.smarttunnel.R;
 import ir.smartdevelopers.smarttunnel.databinding.ActivityAddOpenvpnConfigBinding;
-import ir.smartdevelopers.smarttunnel.databinding.ActivityAddSshconfigBinding;
-import ir.smartdevelopers.smarttunnel.ui.fragments.AdvancedSSHConfigFragment;
 import ir.smartdevelopers.smarttunnel.ui.fragments.ExportOpenVPNConfigDialog;
-import ir.smartdevelopers.smarttunnel.ui.fragments.ExportSshConfigDialog;
 import ir.smartdevelopers.smarttunnel.ui.fragments.OpenVpnProfileFragment;
 import ir.smartdevelopers.smarttunnel.ui.fragments.SimpleSSHConfigFragment;
 import ir.smartdevelopers.smarttunnel.ui.models.ConfigListModel;
 import ir.smartdevelopers.smarttunnel.ui.models.OpenVpnConfig;
 import ir.smartdevelopers.smarttunnel.ui.models.SSHConfig;
-import ir.smartdevelopers.smarttunnel.ui.models.SSHProxy;
 import ir.smartdevelopers.smarttunnel.ui.utils.ConfigsUtil;
-import ir.smartdevelopers.smarttunnel.ui.utils.Util;
 import ir.smartdevelopers.smarttunnel.ui.viewModels.AddOpenVPNConfigViewModel;
 import ir.smartdevelopers.smarttunnel.ui.viewModels.SshConfigVieModel;
 import ir.smartdevelopers.smarttunnel.utils.Logger;
@@ -73,7 +68,7 @@ public class AddOpenVpnConfigActivity extends AppCompatActivity {
     }
 
     private void initViews() {
-        Util.setStatusBarPaddingToView(mBinding.appbar);
+//        Util.setStatusBarPaddingToView(mBinding.appbar);
         mBinding.btnSave.setOnClickListener(v -> {
             saveConfig();
         });

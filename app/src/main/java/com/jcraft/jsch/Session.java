@@ -29,8 +29,11 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package com.jcraft.jsch;
 
-import java.io.*;
-import java.net.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InterruptedIOException;
+import java.io.OutputStream;
+import java.net.Socket;
 import java.util.Vector;
 
 public class Session implements Runnable {
@@ -153,6 +156,7 @@ public class Session implements Runnable {
     byte[] password = null;
 
     JSch jsch;
+    private OnDisconnectListener mOnDisconnectListener;
 
     Session(JSch jsch, String username, String host, int port) throws JSchException {
         super();
@@ -1755,7 +1759,9 @@ public class Session implements Runnable {
 //    }
 
         jsch.removeSession(this);
-
+        if (mOnDisconnectListener != null) {
+            mOnDisconnectListener.onDisconnected();
+        }
         //System.gc();
     }
 
@@ -2004,6 +2010,11 @@ public class Session implements Runnable {
      */
     public String[] getPortForwardingR() throws JSchException {
         return ChannelForwardedTCPIP.getPortForwarding(this);
+    }
+
+    public Session setOnDisconnectListener(OnDisconnectListener onDisconnectListener) {
+        mOnDisconnectListener = onDisconnectListener;
+        return this;
     }
 
     private class Forwarding {
@@ -2896,5 +2907,8 @@ public class Session implements Runnable {
         String value = config.getValue(key);
         if (value != null)
             this.setConfig(key, value);
+    }
+    public interface OnDisconnectListener{
+        void onDisconnected();
     }
 }

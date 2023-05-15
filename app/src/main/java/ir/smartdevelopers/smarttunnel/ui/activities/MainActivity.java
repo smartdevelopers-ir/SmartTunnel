@@ -1,12 +1,5 @@
 package ir.smartdevelopers.smarttunnel.ui.activities;
 
-import androidx.activity.OnBackPressedCallback;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.WindowInsetsCompat;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -21,8 +14,21 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowInsets;
 
+import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 
 import ir.smartdevelopers.smarttunnel.R;
 import ir.smartdevelopers.smarttunnel.SmartTunnelApp;
@@ -31,12 +37,17 @@ import ir.smartdevelopers.smarttunnel.ui.fragments.ConfigsFragment;
 import ir.smartdevelopers.smarttunnel.ui.fragments.HomeFragment;
 import ir.smartdevelopers.smarttunnel.ui.fragments.LogFragment;
 import ir.smartdevelopers.smarttunnel.ui.services.AppUpdateChecker;
+import ir.smartdevelopers.smarttunnel.ui.utils.AlertUtil;
 
 public class MainActivity extends AppCompatActivity {
     public static final String ACTION_UPDATE_AVAILABLE = "ir.smartdevelopers.smarttunnel.ACTION_UPDATE_AVAILABLE";
+    public static final String ACTION_EXPIRE_DATE = "ir.smartdevelopers.ACTION_EXPIRE_DATE_RECEIVED";
+
     private BottomNavigationView mBottomNavigationView;
     private BroadcastReceiver mUpdateAvalablityListener;
     private BroadcastReceiver mDownloadCompleteReceiver;
+    private BroadcastReceiver mExpireDateReceiver;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -97,7 +108,9 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mUpdateAvalablityListener);
+        LocalBroadcastManager manager = LocalBroadcastManager.getInstance(getApplicationContext());
+        manager.unregisterReceiver(mUpdateAvalablityListener);
+        manager.unregisterReceiver(mExpireDateReceiver);
         unregisterReceiver(mDownloadCompleteReceiver);
         super.onDestroy();
     }
@@ -128,6 +141,43 @@ public class MainActivity extends AppCompatActivity {
         };
         IntentFilter downloadCompleteFilter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
         registerReceiver(mDownloadCompleteReceiver,downloadCompleteFilter);
+
+        mExpireDateReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String expireDate = intent.getStringExtra("expire_date");
+                onExpireDate(expireDate);
+            }
+        };
+        IntentFilter expireDateFilter = new IntentFilter(ACTION_EXPIRE_DATE);
+        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(mExpireDateReceiver,expireDateFilter);
+    }
+
+    private void onExpireDate(String expireDate) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
+        try {
+            Date eDate = dateFormat.parse(expireDate);
+            if (eDate == null){
+                return;
+            }
+            Calendar now = Calendar.getInstance();
+            Calendar expireCalendar = Calendar.getInstance();
+            expireCalendar.setTime(eDate);
+            expireCalendar.set(Calendar.HOUR_OF_DAY,23);
+            expireCalendar.set(Calendar.MINUTE,59);
+            expireCalendar.set(Calendar.SECOND,59);
+            long diff = (expireCalendar.getTimeInMillis() - now.getTimeInMillis()) / 1000;
+            if ( diff > 0 && diff < 48*60*60){
+                int minute = (int) ((diff / 60) % 60);
+                int hours = (int) (diff / 3600);
+                int days = (int) ((diff / 3600) / 24);
+                String message = getString(R.string.expire_date_message,days,hours,minute);
+                AlertUtil.showAlertDialog(this,message,getString(R.string.expire_date), AlertUtil.Type.WARNING);
+            }
+
+        } catch (ParseException e) {
+            //ignore
+        }
 
     }
 

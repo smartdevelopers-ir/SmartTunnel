@@ -1,9 +1,6 @@
 package ir.smartdevelopers.smarttunnel.managers;
 
-import android.annotation.SuppressLint;
-
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import ir.smartdevelopers.smarttunnel.packet.IPV4Header;
 import ir.smartdevelopers.smarttunnel.packet.Packet;
@@ -12,7 +9,6 @@ import ir.smartdevelopers.smarttunnel.packet.TCP;
 import ir.smartdevelopers.smarttunnel.packet.TransmissionProtocol;
 import ir.smartdevelopers.smarttunnel.packet.TransmissionProtocolFactory;
 import ir.smartdevelopers.smarttunnel.packet.UDP;
-import ir.smartdevelopers.smarttunnel.utils.ByteUtil;
 import ir.smartdevelopers.smarttunnel.utils.Logger;
 
 /**
@@ -26,15 +22,16 @@ public class PacketManager {
     /** We write to local client in this thread*/
     private  Thread mWriterThread;
     private final ChannelManager mChannelManager;
-    private final ConcurrentLinkedQueue<Packet> mPacketsQueue;
+    private final LinkedBlockingQueue<Packet> mPacketsQueue;
     private final LocalPacketWriter mLocalPacketWriter;
 
     private boolean mDestroyed;
     private ServerPacketListener mServerPacketListener;
+//    private final Object writeLock = new Object();
 
 
     public PacketManager(ServerPacketListener serverPacketListener, ChannelManager channelManager)  {
-        mPacketsQueue = new ConcurrentLinkedQueue<>();
+        mPacketsQueue = new LinkedBlockingQueue<>();
         mChannelManager = channelManager;
         mChannelManager.setPacketManager(this);
         mServerPacketListener = serverPacketListener;
@@ -47,22 +44,23 @@ public class PacketManager {
     public void writeToLocal(Packet packet){
 
        mPacketsQueue.add(packet);
-       mLocalPacketWriter.dataAvailable();
+       Logger.logDebug("PacketManager mPacketsQueue size is :" + mPacketsQueue.size());
+//       mLocalPacketWriter.dataAvailable();
     }
 
 
     static class LocalPacketWriter implements Runnable{
-        private final ConcurrentLinkedQueue<Packet> mPacketsQueue;
+        private final LinkedBlockingQueue<Packet> mPacketsQueue;
         private final ServerPacketListener mServerPacketListener;
-        private final Semaphore mWriterLock;
+//        private final Semaphore mWriterLock;
         private final PacketManager mPacketManager;
 
-        public LocalPacketWriter(ConcurrentLinkedQueue<Packet> packetsQueue, ServerPacketListener serverPacketListener,
+        public LocalPacketWriter(LinkedBlockingQueue<Packet> packetsQueue, ServerPacketListener serverPacketListener,
                                  PacketManager packetManager) {
             mPacketsQueue = packetsQueue;
             mServerPacketListener = serverPacketListener;
             mPacketManager = packetManager;
-            mWriterLock = new Semaphore(0);
+//            mWriterLock = new Semaphore(0);
         }
 
         @Override
@@ -72,24 +70,22 @@ public class PacketManager {
                     if (mPacketManager.mDestroyed){
                         break;
                     }
-                    Packet packet =mPacketsQueue.poll();
+                    Packet packet =mPacketsQueue.take();
                     if (packet != null){
                         mServerPacketListener.onPacketFromServer(packet);
-                    }else {
-                        mWriterLock.acquire();
                     }
                 }
             } catch (InterruptedException e) {
-                if (!mPacketManager.mDestroyed){
-                    mPacketManager.mWriterThread = new Thread(this);
-                    mPacketManager.mWriterThread.start();
-                }
+//                if (!mPacketManager.mDestroyed){
+//                    mPacketManager.mWriterThread = new Thread(this);
+//                    mPacketManager.mWriterThread.start();
+//                }
             }
         }
 
-        public void dataAvailable() {
-            mWriterLock.release();
-        }
+//        public void dataAvailable() {
+//            mWriterLock.release();
+//        }
     }
     /** We read incoming bytes from tun, process them, and create proportionate Packet object
      * and send them to remote server */

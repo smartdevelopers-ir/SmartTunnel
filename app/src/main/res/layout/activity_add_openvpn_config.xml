@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     tools:context=".ui.activities.AddOpenVpnConfigActivity">
 <com.google.android.material.appbar.AppBarLayout
     android:id="@+id/appbar"
@@ -21,7 +22,7 @@
             android:layout_weight="1"
             android:layout_height="wrap_content"
             android:text="@string/add_openvpn_config_title"
-            android:textAppearance="@style/TextAppearance.AppCompat.Title"
+            android:textAppearance="@style/TitleTextAppearance"
             android:layout_gravity="center_vertical"
             android:layout_marginStart="16dp"
             />

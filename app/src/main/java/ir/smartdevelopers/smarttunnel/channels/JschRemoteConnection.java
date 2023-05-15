@@ -2,30 +2,18 @@ package ir.smartdevelopers.smarttunnel.channels;
 
 import android.annotation.SuppressLint;
 
-import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelDirectTCPIP;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.KeyPair;
 import com.jcraft.jsch.ProxyHTTP;
 import com.jcraft.jsch.Session;
-import com.jcraft.jsch.UserInfo;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
-import java.io.StringReader;
-import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.Objects;
-import java.util.concurrent.Executors;
 
 import ir.smartdevelopers.smarttunnel.exceptions.RemoteConnectionException;
-import ir.smartdevelopers.smarttunnel.packet.Packet;
 import ir.smartdevelopers.smarttunnel.ui.classes.AcceptAllHostRepo;
 import ir.smartdevelopers.smarttunnel.ui.classes.JschSimpleUserInfo;
 import ir.smartdevelopers.smarttunnel.ui.exceptions.AuthFailedException;
@@ -36,6 +24,7 @@ import ir.smartdevelopers.smarttunnel.ui.models.Proxy;
 import ir.smartdevelopers.smarttunnel.ui.utils.DNSUtil;
 import ir.smartdevelopers.smarttunnel.ui.utils.Util;
 import ir.smartdevelopers.smarttunnel.utils.Logger;
+import ir.smartdevelopers.tun2socks.DynamicForwarder;
 
 public class JschRemoteConnection extends RemoteConnection {
     private Session mSession;
@@ -50,11 +39,13 @@ public class JschRemoteConnection extends RemoteConnection {
     private boolean isUsernameLocked;
     private boolean preferIpV6;
     private String mDNSServer;
+    private DynamicForwarder mDynamicForwarder;
+    private OnDisconnectListener mOnDisconnectListener;
 
     public JschRemoteConnection(String serverAddress, int serverPort,
                                 String username, String password,
                                 boolean isServerNameLocked, boolean isServerPortLocked,
-                                boolean isUsernameLocked,String DNSServer,boolean preferIpV6) {
+                                boolean isUsernameLocked, String DNSServer, boolean preferIpV6) {
         this.serverAddress = serverAddress;
         this.serverPort = serverPort;
         this.username = username;
@@ -63,7 +54,7 @@ public class JschRemoteConnection extends RemoteConnection {
 
         this.isServerPortLocked = isServerPortLocked;
         this.isUsernameLocked = isUsernameLocked;
-        this.preferIpV6= preferIpV6;
+        this.preferIpV6 = preferIpV6;
         this.mDNSServer = DNSServer;
     }
 
@@ -92,6 +83,11 @@ public class JschRemoteConnection extends RemoteConnection {
         return channel;
     }
 
+    public void startDynamicForwarder(int port) {
+        mDynamicForwarder = new DynamicForwarder(port, mSession);
+
+    }
+
     @Override
     public void stopDirectTCPChannel(DirectTCPChannel channel) throws RemoteConnectionException {
         channel.stop();
@@ -106,7 +102,6 @@ public class JschRemoteConnection extends RemoteConnection {
     @Override
     public void connect() throws RemoteConnectionException {
         JSch jSch = new JSch();
-
         jSch.setHostKeyRepository(new AcceptAllHostRepo());
 
         if (privateKey != null) {
@@ -122,55 +117,69 @@ public class JschRemoteConnection extends RemoteConnection {
         }
         try {
             String proxyMessage = "";
-            if (mProxy instanceof HttpProxy){
-                proxyMessage = String.format(" using proxy %s:%d",mProxy.getAddress(),mProxy.getPort());
+            if (mProxy instanceof HttpProxy) {
+                proxyMessage = String.format(" using proxy %s:%d", mProxy.getAddress(), mProxy.getPort());
             }
-            if (isServerNameLocked){
-                Logger.logMessage(new LogItem(String.format("Connecting to SSH server %s",proxyMessage)));
-            }else {
-                Logger.logMessage(new LogItem(String.format("Connecting to SSH server %s:%d %s",serverAddress,serverPort,proxyMessage)));
+            if (isServerNameLocked) {
+                Logger.logMessage(new LogItem(String.format("Connecting to SSH server %s", proxyMessage)));
+            } else {
+                Logger.logMessage(new LogItem(String.format("Connecting to SSH server %s:%d %s", serverAddress, serverPort, proxyMessage)));
             }
-            if (!isUsernameLocked){
-                Logger.logMessage(new LogItem(String.format("Username : %s",username)));
+            if (!isUsernameLocked) {
+                Logger.logMessage(new LogItem(String.format("Username : %s", username)));
 
             }
-            Logger.logMessage(new LogItem(String.format("getting host ip via %s DNS server",mDNSServer)));
-            String ip = DNSUtil.getIp(serverAddress,mDNSServer,preferIpV6);
+            Logger.logMessage(new LogItem(String.format("getting host ip via %s DNS server", mDNSServer)));
+            String ip = DNSUtil.getIp(serverAddress, mDNSServer, preferIpV6);
             String serverAddr = ip == null ? serverAddress : ip;
-            Logger.logDebug("Server address is ="+serverAddr);
+            Logger.logDebug("Server address is =" + serverAddr);
             mSession = jSch.getSession(username, serverAddr, serverPort);
 
 
             if (mProxy instanceof HttpProxy) {
-                mSession.setProxy(new ProxyHTTP(mProxy.getAddress(),mProxy.getPort()));
+                mSession.setProxy(new ProxyHTTP(mProxy.getAddress(), mProxy.getPort()));
             }
-            if (privateKey == null){
+            if (privateKey == null) {
                 Logger.logMessage(new LogItem("Auth = password"));
-            }else {
+            } else {
                 Logger.logMessage(new LogItem("Auth = private key"));
             }
             mSession.setPassword(password);
             mSession.setUserInfo(new JschSimpleUserInfo());
+            mSession.setOnDisconnectListener(new Session.OnDisconnectListener() {
+                @Override
+                public void onDisconnected() {
+                    if (mOnDisconnectListener != null) {
+                        mOnDisconnectListener.onDisconnected();
+                    }
+                }
+            });
             mSession.connect(15000);
 
-            Logger.logStyledMessage("Connected to SSH server","#4AD8E2",true);
-        }catch (Exception e){
-            Logger.logStyledMessage("connection to SSH server failed","#FFBA44",true);
-            if (e instanceof JSchException){
-                if (Util.contains(e.getMessage(),"Auth fail") || Util.contains(e.getMessage(),"Auth cancel")){
-                    Logger.logStyledMessage("Authentication failed","#FFBA44",true);
-                    throw  new RemoteConnectionException(new AuthFailedException());
+
+            Logger.logStyledMessage("Connected to SSH server", "#4AD8E2", true);
+        } catch (Exception e) {
+            Logger.logStyledMessage("connection to SSH server failed", "#FFBA44", true);
+            if (e instanceof JSchException) {
+                if (Util.contains(e.getMessage(), "Auth fail") || Util.contains(e.getMessage(), "Auth cancel")) {
+                    Logger.logStyledMessage("Authentication failed", "#FFBA44", true);
+                    throw new RemoteConnectionException(new AuthFailedException());
                 }
 
             }
-            Logger.logMessage(new LogItem("Error while connecting to SSH server : "+e.getMessage()));
+            Logger.logMessage(new LogItem("Error while connecting to SSH server : " + e.getMessage()));
             throw new RemoteConnectionException(e);
         }
     }
 
+
+
     @Override
     public void disconnect() {
-        if (mSession == null){
+        if (mDynamicForwarder != null) {
+            mDynamicForwarder.stop();
+        }
+        if (mSession == null) {
             return;
         }
         mSession.disconnect();
@@ -179,31 +188,32 @@ public class JschRemoteConnection extends RemoteConnection {
 
     @Override
     public boolean isConnected() {
-        if (mSession == null){
+        if (mSession == null) {
             return false;
         }
         return mSession.isConnected();
     }
 
     @Override
-    public Socket getMainSocket() {
-        if (mSession == null){
-            return null;
+    public int getMainSocketDescriptor() {
+        int fdVal = -1;
+        if (mSession != null && mSession.isConnected()) {
+            fdVal = Util.getSocketDescriptor(mSession.getSocket());
         }
-        if (!mSession.isConnected()){
-            return null;
-        }
-        return mSession.getSocket();
+
+        return fdVal;
     }
 
     @Override
     public boolean isPortInUse(int port) {
         try {
             String[] forwarding = mSession.getPortForwardingL();
-            for (String s : forwarding){
+            for (String s : forwarding) {
                 String[] splits = s.split(":");
                 int lPort = Integer.parseInt(splits[0]);
-                return lPort == port;
+                if (lPort == port) {
+                    return true;
+                }
             }
         } catch (Exception e) {
             return false;
@@ -213,6 +223,11 @@ public class JschRemoteConnection extends RemoteConnection {
 
     public void setPrivateKey(PrivateKey privateKey) {
         this.privateKey = privateKey;
+    }
+
+    public JschRemoteConnection setOnDisconnectListener(OnDisconnectListener onDisconnectListener) {
+        mOnDisconnectListener = onDisconnectListener;
+        return this;
     }
 
     public class JschDirectTcpChannel extends DirectTCPChannel {
@@ -271,7 +286,7 @@ public class JschRemoteConnection extends RemoteConnection {
                         mSocket.close();
                     }
                 }
-                if (mChannel != null){
+                if (mChannel != null) {
                     mChannel.disconnect();
                 }
                 stopLocalPortForwarding(localAddress, localPort);
@@ -286,11 +301,14 @@ public class JschRemoteConnection extends RemoteConnection {
 //                return false;
 //            }
 //            return mSocket.isConnected();
-            if (mChannel !=null){
+            if (mChannel != null) {
                 return mChannel.isConnected();
             }
             return false;
         }
     }
 
+    public interface OnDisconnectListener {
+        void onDisconnected();
+    }
 }

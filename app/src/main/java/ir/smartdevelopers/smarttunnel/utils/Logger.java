@@ -9,6 +9,7 @@ import java.lang.ref.WeakReference;
 import java.util.HashSet;
 import java.util.Set;
 
+import ir.smartdevelopers.smarttunnel.BuildConfig;
 import ir.smartdevelopers.smarttunnel.packet.Packet;
 import ir.smartdevelopers.smarttunnel.ui.models.LogItem;
 import ir.smartdevelopers.smarttunnel.ui.utils.PrefsUtil;
@@ -17,10 +18,14 @@ import ir.smartdevelopers.smarttunnel.ui.utils.Util;
 public class Logger {
     private static Set<MessageListener> messageListeners = new HashSet<>();
     public static void logInfo(String message){
-        Log.i("TTT info",message);
+        if (BuildConfig.DEBUG) {
+            Log.i("TTT info", message);
+        }
     }
     public static void logDebug(String message){
-        Log.d("TTT debug",message);
+        if (BuildConfig.DEBUG){
+            Log.d("TTT debug",message);
+        }
     }
     private static WeakReference<Context> weakContext;
 

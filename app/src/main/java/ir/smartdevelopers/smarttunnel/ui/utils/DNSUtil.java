@@ -55,6 +55,33 @@ public class DNSUtil {
 
     }
     public static String getIp(String host,String dnsServer,boolean preferIpV6){
+        boolean hostIsIp = false;
+        if (!preferIpV6){
+            String[] ips = host.split("\\.");
+            if (ips.length == 4){
+                try {
+                    for (String s : ips){
+                        Integer.parseInt(s);
+                    }
+                    hostIsIp = true;
+                }catch (NumberFormatException e){
+                    //ignore
+                }
+            }
+        }else {
+            String[] ips = host.split(":");
+            if (ips.length <= 8){
+                try {
+                    for (String s : ips){
+                        Integer.parseInt(s,16);
+                    }
+                    hostIsIp = true;
+                }catch (NumberFormatException ignore){}
+            }
+        }
+        if (hostIsIp){
+            return host;
+        }
         String ipv6 = null;
         boolean isDeviceSupportIpV6 = NetworkUtils.isIPv6Enabled();
         if (preferIpV6){
@@ -67,6 +94,8 @@ public class DNSUtil {
         }
         if (ipv6 != null){
             return ipv6;
+        }else {
+            Logger.logMessage(new LogItem("prefer IPv6 but but server dose not have IPv6"));
         }
         return getIpV4(host,dnsServer);
     }

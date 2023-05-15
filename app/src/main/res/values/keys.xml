@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="key_proxy">key_proxy</string>
-    <string name="key_dns">key_dns</string>
-    <string name="key_connection_sound">key_connection_sound</string>
-    <string name="key_prefer_ipv6">key_prefer_ipv6</string>
+    <string name="key_proxy" translatable="false">key_proxy</string>
+    <string name="key_dns" translatable="false">key_dns</string>
+    <string name="key_connection_sound" translatable="false">key_connection_sound</string>
+    <string name="key_prefer_ipv6" translatable="false">key_prefer_ipv6</string>
 </resources>

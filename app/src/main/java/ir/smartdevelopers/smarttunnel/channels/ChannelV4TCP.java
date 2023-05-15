@@ -1,11 +1,8 @@
 package ir.smartdevelopers.smarttunnel.channels;
 
-import android.util.Log;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -81,7 +78,7 @@ public abstract class ChannelV4TCP extends Channel implements TCPController.TcpL
 
     private void startReaderThread() {
         mRemoteReaderThread = new Thread(new ChannelReader());
-        mRemoteReaderThread.setName(getId() + "_reader");
+        mRemoteReaderThread.setName(getId() + "_remoteReader");
         mRemoteReaderThread.start();
 
     }
@@ -121,38 +118,45 @@ public abstract class ChannelV4TCP extends Channel implements TCPController.TcpL
                                 mRemoteOut.flush();
                             }
                         } catch (IOException e) {
-                            if (!(e instanceof SocketTimeoutException)) {
-                                throw e;
-                            }
+//                            if (!(e instanceof SocketTimeoutException)) {
+//                                throw e;
+//                            }
+                            close();
+                            break;
                         }
 
                     }
 
 
                 } else {
+                    close();
                     break;
                 }
             }
 
         } catch (Exception e) {
-            String message;
-            Throwable t = null;
-            while (true){
-                t = e.getCause();
-                if (t != null){
-                    if (t.getMessage() != null){
-                        message = t.getMessage();
-                       break;
-                    }
+            String message = null;
+            Throwable t = e;
+            while (t != null){
+                message = t.getMessage();
+                if (message != null){
+                    break;
                 }
+                t = e.getCause();
+
             }
-            Logger.logError(message);
+            if (message != null){
+                Logger.logError(message);
+            }
+            close();
+            return;
         }
 
-        mRemoteOutClosed = true;
-        if (mRemoteInClosed){
-            close();
-        }
+//        mRemoteOutClosed = true;
+//        if (mRemoteInClosed){
+//            close();
+//        }
+
 
     }
 
@@ -212,6 +216,7 @@ public abstract class ChannelV4TCP extends Channel implements TCPController.TcpL
                             }
 
                         } else {
+                            close();
                             break;
                         }
                     }
@@ -219,14 +224,13 @@ public abstract class ChannelV4TCP extends Channel implements TCPController.TcpL
                     if (e.getLocalizedMessage() != null){
                         Logger.logDebug(e.getLocalizedMessage());
                     }
+                    close();
                 }
-            }
-
-            mRemoteInClosed = true;
-            if (mRemoteOutClosed){
+            }else {
                 close();
             }
 
+            mTCPController.remoteClosed();
         }
     }
 

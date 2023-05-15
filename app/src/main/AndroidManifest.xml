@@ -26,7 +26,9 @@
             android:exported="false" />
         <activity
             android:name=".ui.activities.AddSSHConfigActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            />
 
         <activity
             android:name="ir.smartdevelopers.smarttunnel.TestMainActivity"
@@ -51,40 +53,106 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <intent-filter
-                android:priority="300">
+            <intent-filter>
+
                 <action
                     android:name="android.intent.action.VIEW" />
+
                 <category
                     android:name="android.intent.category.BROWSABLE" />
+
                 <category
                     android:name="android.intent.category.DEFAULT" />
+
                 <data
-                    android:mimeType="*/*" />
-                <data android:host="*"/>
+                    android:mimeType="application/octet-stream" />
+                <data
+                    android:mimeType="application/st" />
                 <data
                     android:scheme="content" />
-                <data
-                    android:pathPattern=".*\\.st" />
-            </intent-filter>
 
-            <intent-filter android:priority="300">
+                <data
+                    android:host="*" />
+
+                <data
+                    android:port="*" />
+            </intent-filter>
+            <intent-filter>
                 <action
                     android:name="android.intent.action.VIEW" />
+
                 <category
                     android:name="android.intent.category.BROWSABLE" />
+
                 <category
                     android:name="android.intent.category.DEFAULT" />
+
                 <data
                     android:mimeType="*/*" />
-                <data android:host="*"/>
+
                 <data
                     android:scheme="file" />
+
                 <data
-                    android:pathPattern=".*\\.st" />
+                    android:scheme="content" />
+
+                <data
+                    android:host="*" />
+
+                <data
+                    android:pathPattern=".*.st" />
+
+                <data
+                    android:pathPattern=".*.st" />
+
+                <data
+                    android:pathPattern=".*..*.st" />
+
+                <data
+                    android:pathPattern=".*..*.st" />
+
+                <data
+                    android:pathPattern=".*..*..*.st" />
+
+                <data
+                    android:pathPattern=".*..*..*.st" />
+
+                <data
+                    android:pathPattern=".*..*..*..*.st" />
+
+                <data
+                    android:pathPattern=".*..*..*..*.st" />
+
+                <data
+                    android:pathPattern=".*..*..*..*..*.st" />
+
+                <data
+                    android:pathPattern=".*..*..*..*..*.st" />
+
+                <data
+                    android:pathPattern=".*..*..*..*..*..*.st" />
+
+                <data
+                    android:pathPattern=".*..*..*..*..*..*.st" />
+
+                <data
+                    android:pathPattern=".*..*..*..*..*..*..*.st" />
+
+                <data
+                    android:pathPattern=".*..*..*..*..*..*..*.st" />
+
+                <data
+                    android:pathPattern=".*..*..*..*..*..*..*..*.st" />
+
+                <data
+                    android:pathPattern=".*..*..*..*..*..*..*..*.st" />
             </intent-filter>
+
         </activity>
-        <activity android:name="ir.smartdevelopers.smarttunnel.ui.activities.AddOpenVpnConfigActivity" />
+        <activity android:name="ir.smartdevelopers.smarttunnel.ui.activities.AddOpenVpnConfigActivity"
+            android:windowSoftInputMode="adjustResize"
+
+            />
 
         <service
             android:name="ir.smartdevelopers.smarttunnel.MyVpnService"

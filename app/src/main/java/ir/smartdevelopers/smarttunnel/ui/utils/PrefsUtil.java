@@ -264,4 +264,10 @@ public class PrefsUtil {
     public static String getUpdateUrl(Context context){
         return getGeneralPrefs(context).getString("update_url", null);
     }
+    public static String getLastNoteExported(Context context){
+        return getGeneralPrefs(context).getString("last_note_exported","");
+    }
+    public static void setLastNoteExported(Context context,String lastNote){
+         getGeneralPrefs(context).edit().putString("last_note_exported",lastNote).apply();
+    }
 }

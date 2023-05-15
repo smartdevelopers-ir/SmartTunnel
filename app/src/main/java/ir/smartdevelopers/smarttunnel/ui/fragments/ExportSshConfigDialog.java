@@ -4,12 +4,10 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
-import android.provider.DocumentsContract;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.webkit.MimeTypeMap;
+import android.widget.CompoundButton;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultCallback;
@@ -18,16 +16,12 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatDialogFragment;
 import androidx.documentfile.provider.DocumentFile;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.gson.Gson;
 
-import java.io.File;
 import java.io.OutputStream;
 
 import ir.smartdevelopers.smarttunnel.R;
@@ -87,8 +81,22 @@ public class ExportSshConfigDialog extends Fragment {
             }
             return true;
         });
+        mBinding.chbLockAll.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                selectAll(isChecked);
+            }
+        });
+        mBinding.edtNote.setText(PrefsUtil.getLastNoteExported(requireContext()));
     }
-
+    private void selectAll(boolean isChecked) {
+        mBinding.chbLockConnectionType.setChecked(isChecked);
+        mBinding.chbLockPrivateKey.setChecked(isChecked);
+        mBinding.chbLockPassword.setChecked(isChecked);
+        mBinding.chbLockUsername.setChecked(isChecked);
+        mBinding.chbLockServerAddress.setChecked(isChecked);
+        mBinding.chbLockServerPort.setChecked(isChecked);
+    }
     private void exportConfig() {
         CharSequence fileName = mBinding.edtName1.getText();
         if (fileName == null || fileName.length() == 0) {
@@ -180,6 +188,9 @@ public class ExportSshConfigDialog extends Fragment {
     }
 
     private void export(String exportConfigJson, String configType, OutputStream outputStream) {
+        if (mBinding.edtNote.getText() != null){
+            PrefsUtil.setLastNoteExported(requireContext(),mBinding.edtNote.getText().toString());
+        }
         ConfigsUtil.exportConfig(exportConfigJson, configType, outputStream, new OnCompleteListener<Boolean>() {
             @Override
             public void onComplete(Boolean success) {
