@@ -261,6 +261,7 @@ public class JschRemoteConnection extends RemoteConnection {
                 mChannel.setPort(remotePort);
                 mChannel.connect(10000);
 
+
 //                mSocket = new Socket();
 //                mSocket.setTcpNoDelay(true);
 ////                mSocket.setReceiveBufferSize(Packet.MAX_SIZE);

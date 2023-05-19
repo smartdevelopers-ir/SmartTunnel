@@ -13,6 +13,7 @@ import androidx.core.app.NotificationManagerCompat;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.OutputStreamWriter;
+import java.security.Security;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashSet;
@@ -32,6 +33,9 @@ public class SmartTunnelApp extends Application {
             "com.whatsapp",
             "com.instagram.android",
     };
+    static {
+        Security.insertProviderAt(new org.spongycastle.jce.provider.BouncyCastleProvider(), 1);
+    }
     @Override
     public void onCreate() {
         androidDefaultExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();

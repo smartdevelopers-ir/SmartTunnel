@@ -137,7 +137,8 @@ public class AddSSHConfigActivity extends AppCompatActivity {
             getSupportFragmentManager().beginTransaction()
                     .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
                     .addToBackStack("export_config")
-                    .add(android.R.id.content,ExportSshConfigDialog.getInstance())
+                    .add(android.R.id.content,
+                            ExportSshConfigDialog.getInstance(mSshConfigVieModel.getSSHConfigBuilder().getName()))
                     .commit();
         }
     }

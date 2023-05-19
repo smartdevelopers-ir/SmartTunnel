@@ -52,6 +52,7 @@ public class DynamicDNSForwarder implements Runnable{
             OutputStream dnsOut = channel.getRemoteOut();
             dnsOut.write(tcpData);
             dnsOut.flush();
+
              dnsResponseData = new byte[2048];
             int len = dnsIn.read(dnsResponseData);
 

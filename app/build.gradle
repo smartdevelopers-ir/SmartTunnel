@@ -94,25 +94,19 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 //    implementation 'com.jcraft:jsch:0.1.55'
+    // dns java higher version need java 8+
     implementation 'dnsjava:dnsjava:2.1.9'
     implementation 'commons-codec:commons-codec:1.15'
     implementation 'com.google.code.gson:gson:2.10.1'
-// https://mvnrepository.com/artifact/org.slf4j/slf4j-api
-//    implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.7'
-// https://mvnrepository.com/artifact/com.sshtools/maverick-synergy-client
-//    implementation group: 'com.sshtools', name: 'maverick-synergy-client', version: '3.0.10'
-// https://mvnrepository.com/artifact/com.hierynomus/sshj
-//    implementation ('com.hierynomus:sshj:0.35.0'){
-//        exclude group: 'com.jcraft', module: 'jzlib'
-//    }
 
     implementation 'com.madgag.spongycastle:core:1.58.0.0'
+    // https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk18on
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.73'
+
 // https://mvnrepository.com/artifact/com.madgag.spongycastle/prov
     implementation 'com.madgag.spongycastle:prov:1.58.0.0'
-//    implementation 'com.getkeepsafe.relinker:relinker:1.4.4'
-
-
-
+    implementation 'com.madgag.spongycastle:pg:1.54.0.0'
+    implementation 'com.madgag.spongycastle:pkix:1.54.0.0'
 
 
 }

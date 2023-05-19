@@ -49,7 +49,7 @@ public class DNSForwarder implements Runnable{
         try (Socket dnsServerSocket = new Socket(proxy);
              DatagramSocket mSocket = new DatagramSocket()){
             dnsServerSocket.setTcpNoDelay(true);
-            dnsServerSocket.setSoTimeout(8000);
+            dnsServerSocket.setSoTimeout(4000);
             dnsServerSocket.connect(new InetSocketAddress(dnsServerAddress, dnsServerPort));
             InputStream dnsIn = dnsServerSocket.getInputStream();
             OutputStream dnsOut = dnsServerSocket.getOutputStream();

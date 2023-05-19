@@ -168,7 +168,8 @@ public class AddOpenVpnConfigActivity extends AppCompatActivity {
             getSupportFragmentManager().beginTransaction()
                     .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
                     .addToBackStack("export_config")
-                    .add(android.R.id.content, ExportOpenVPNConfigDialog.getInstance())
+                    .add(android.R.id.content,
+                            ExportOpenVPNConfigDialog.getInstance(mSshConfigVieModel.getSSHConfigBuilder().getName()))
                     .commit();
         }
     }

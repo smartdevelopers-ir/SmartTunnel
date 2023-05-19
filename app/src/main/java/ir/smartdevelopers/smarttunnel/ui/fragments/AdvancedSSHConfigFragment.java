@@ -158,6 +158,7 @@ public class AdvancedSSHConfigFragment extends Fragment {
         mSshConfigVieModel.getSSHConfigBuilder().setPayload(null);
         mSshConfigVieModel.getSSHConfigBuilder().setConnectionType(SSHConfig.CONNECTION_TYPE_DIRECT);
         mSshConfigVieModel.getSSHConfigBuilder().setServerNameIndicator(null);
+        mSshConfigVieModel.getSSHConfigBuilder().setJumper(null);
     }
 
     public void showErrors(){

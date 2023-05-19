@@ -53,8 +53,12 @@ public class ExportSshConfigDialog extends Fragment {
         }
     });
 
-    public static ExportSshConfigDialog getInstance() {
-        return new ExportSshConfigDialog();
+    public static ExportSshConfigDialog getInstance(String name) {
+        ExportSshConfigDialog dialog = new ExportSshConfigDialog();
+        Bundle args = new Bundle();
+        args.putString("name",name);
+        dialog.setArguments(args);
+        return dialog;
     }
 
 
@@ -88,6 +92,9 @@ public class ExportSshConfigDialog extends Fragment {
             }
         });
         mBinding.edtNote.setText(PrefsUtil.getLastNoteExported(requireContext()));
+        if (getArguments() != null){
+            mBinding.edtName1.setText(getArguments().getString("name"));
+        }
     }
     private void selectAll(boolean isChecked) {
         mBinding.chbLockConnectionType.setChecked(isChecked);

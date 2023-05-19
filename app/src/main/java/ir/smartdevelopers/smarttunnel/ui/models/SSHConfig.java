@@ -38,6 +38,7 @@ import ir.smartdevelopers.smarttunnel.ui.exceptions.ConfigException;
 import ir.smartdevelopers.smarttunnel.ui.utils.PrefsUtil;
 import ir.smartdevelopers.smarttunnel.utils.Logger;
 import ir.smartdevelopers.tun2socks.DNSForwarder;
+import ir.smartdevelopers.tun2socks.DynamicDNSForwarder;
 
 public class SSHConfig extends Config implements JschRemoteConnection.OnDisconnectListener{
     /**
@@ -174,10 +175,10 @@ public class SSHConfig extends Config implements JschRemoteConnection.OnDisconne
             if (dns == null){
                 throw new ConfigException("DNS not set");
             }
-//            JschRemoteConnection connection = new JschRemoteConnection(proxifiedAddress,proxifiedPort,mUsername,mPassword,
-//                    isServerAddressLocked(), isServerPortLocked(), isUsernameLocked(),dns,preferIPv6);
-            Ssh2RemoteConnection connection = new Ssh2RemoteConnection(proxifiedAddress,proxifiedPort,mUsername,mPassword,
+            JschRemoteConnection connection = new JschRemoteConnection(proxifiedAddress,proxifiedPort,mUsername,mPassword,
                     isServerAddressLocked(), isServerPortLocked(), isUsernameLocked(),dns,preferIPv6);
+//            Ssh2RemoteConnection connection = new Ssh2RemoteConnection(proxifiedAddress,proxifiedPort,mUsername,mPassword,
+//                    isServerAddressLocked(), isServerPortLocked(), isUsernameLocked(),dns,preferIPv6);
             connection.setOnDisconnectListener(this);
             connection.setPrivateKey(privateKey);
             mRemoteConnection = connection;
@@ -292,8 +293,8 @@ public class SSHConfig extends Config implements JschRemoteConnection.OnDisconne
                     DatagramPacket packet  =  new DatagramPacket(buff,buff.length);
                     mSocket.receive(packet);
                     if (packet.getLength() > 0){
-//                        new Thread(new DynamicDNSForwarder(packet,mDnsServer,53,mRemoteConnection)).start();
-                        new Thread(new DNSForwarder(packet,mDnsServer,53,socksAddress,socksPort)).start();
+                        new Thread(new DynamicDNSForwarder(packet,mDnsServer,53,mRemoteConnection)).start();
+//                        new Thread(new DNSForwarder(packet,mDnsServer,53,socksAddress,socksPort)).start();
                     }
                 }
             } catch (IOException e) {

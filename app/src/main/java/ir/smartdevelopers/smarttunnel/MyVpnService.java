@@ -181,7 +181,7 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
 
         @Override
         public void run() {
-            if (mStatus == Status.DISCONNECTING || mStatus == Status.DISCONNECTED ){
+            if (mStatus == Status.DISCONNECTING || mStatus == Status.DISCONNECTED || mStatus == Status.NETWORK_ERROR){
                 return;
             }
             connect(getApplicationContext(), configId, configType,MODE_RECONNECT);
@@ -485,6 +485,9 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
             case RETRYING:
                 intent.setAction(ACTION_RETRYING);
                 notificationText = getString(R.string.retrying);
+                if (mStatus == Status.CONNECTED) {
+                    playDisconnectSound();
+                }
                 break;
             case DISCONNECTING:
                 intent.setAction(ACTION_DISCONNECTING);
