@@ -19,6 +19,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -237,25 +238,36 @@ public class MainActivity extends AppCompatActivity {
 
     private void goToAppsFragment() {
         getSupportFragmentManager().beginTransaction()
+                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                 .replace(R.id.mainFragmentContainer,new AppsFragment())
                 .commit();
     }
 
     private void goToLogFragment() {
         getSupportFragmentManager().beginTransaction()
+                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                 .replace(R.id.mainFragmentContainer,new LogFragment())
                 .commit();
     }
 
     private void goToConfigFragment(boolean animate,Bundle data) {
-        getSupportFragmentManager().beginTransaction()
-                .replace(R.id.mainFragmentContainer,ConfigsFragment.class,data)
+        if (!animate){
+            mBottomNavigationView.setSelectedItemId(R.id.action_config);
+        }
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        if (animate){
+            transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+        }
+        transaction.replace(R.id.mainFragmentContainer,ConfigsFragment.class,data)
                 .commit();
     }
 
     private void goToHomeFragment(boolean animate,Bundle data) {
-        getSupportFragmentManager().beginTransaction()
-                .replace(R.id.mainFragmentContainer,HomeFragment.class,data)
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        if (animate){
+            transaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
+        }
+        transaction.replace(R.id.mainFragmentContainer,HomeFragment.class,data)
                 .commit();
     }
 

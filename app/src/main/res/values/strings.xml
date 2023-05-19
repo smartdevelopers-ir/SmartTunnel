@@ -83,7 +83,7 @@
     <string name="error_in_export_file" translatable="false">Error in exporting file</string>
     <string name="directory_to_save" translatable="false">Directory To Save</string>
     <string name="directory_to_save_message" translatable="false">In the next screen please select witch directory you want to save configs. This directory will be use to save next other configs.</string>
-    <string name="ok" translatable="false">Ok</string>
+    <string name="ok" translatable="false">OK</string>
     <string name="config_saved" translatable="false">Config saved</string>
     <string name="config_not_supported" translatable="false">Config not supported</string>
     <string name="error_parsing_config" translatable="false">Error in parsing config</string>
@@ -149,8 +149,8 @@
     <string name="prefer_ipv6" translatable="false">Prefer IPv6</string>
     <string name="prefer_ipv6_summary" translatable="false">If checked try using IPv6 first if posible</string>
     <string name="share" translatable="false">Share</string>
-    <string name="retrying">Retrying...</string>
-    <string name="disconncting">Disconnecting...</string>
+    <string name="retrying">Retrying…</string>
+    <string name="disconncting">Disconnecting…</string>
     <string name="no_connection_message" translatable="false">You have no Network. please connect to a network</string>
     <string name="open_vpn_over_ssh" translatable="false">OpenVPN over SSH</string>
     <string name="ssh_tunnel" translatable="false">SSH tunnel</string>

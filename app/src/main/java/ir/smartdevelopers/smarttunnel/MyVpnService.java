@@ -525,10 +525,13 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
     public PendingIntent getMainIntent() {
         int flag = Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE :
                 PendingIntent.FLAG_UPDATE_CURRENT;
+        Intent intent = new Intent(getApplicationContext(),MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         PendingIntent pi = PendingIntent.getActivity(getApplicationContext(),
-                getPackageName().hashCode(),
-                new Intent(getApplicationContext(), MainActivity.class),
-                flag);
+                getPackageName().hashCode(),intent,flag);
 
         return pi;
     }

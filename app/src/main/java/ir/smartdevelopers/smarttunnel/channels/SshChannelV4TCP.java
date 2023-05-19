@@ -53,8 +53,7 @@ public class SshChannelV4TCP extends ChannelV4TCP implements TCPController.TcpLi
     @Override
     public void connect() throws RemoteConnectionException {
 
-            mChannel = mRemoteConnection.startDirectTCPChannel("127.0.0.1",0,
-                    mInitialPacket.getIPHeader().getDestAddressName(),
+            mChannel = mRemoteConnection.startDirectTCPChannel(mInitialPacket.getIPHeader().getDestAddressName(),
                     mInitialPacket.getTransmissionProtocol().getDestPortIntValue());
 
             mRemoteOut = mChannel.getRemoteOut();

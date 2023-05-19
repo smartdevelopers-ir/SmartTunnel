@@ -4,6 +4,20 @@ plugins {
 
 android {
 
+    signingConfigs {
+        debug {
+            storeFile file('D:\\Projrcts\\FakeSMS\\smart_tunel.jks')
+            storePassword 'mosi.1371'
+            keyPassword 'mosi.1371'
+            keyAlias 'original'
+        }
+        release {
+            storeFile file('D:\\Projrcts\\FakeSMS\\smart_tunel.jks')
+            storePassword 'mosi.1371'
+            keyAlias 'original'
+            keyPassword 'mosi.1371'
+        }
+    }
     namespace 'ir.smartdevelopers.smarttunnel'
     compileSdk 33
 
@@ -11,8 +25,8 @@ android {
         applicationId "ir.smartdevelopers.smarttunnel"
         minSdk 21
         targetSdk 33
-        versionCode 6
-        versionName "1.1.1"
+        versionCode 8
+        versionName "1.1.3"
         dimension = "implementation"
         buildConfigField("boolean", "openvpn3", "false")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -26,7 +40,12 @@ android {
     buildTypes {
         release {
             minifyEnabled false
+            shrinkResources = false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+        debug {
+            signingConfig signingConfigs.debug
         }
     }
     compileOptions {
@@ -37,6 +56,10 @@ android {
         viewBinding true
     }
     packagingOptions.resources.excludes.add("META-INF/DEPENDENCIES")
+    packagingOptions{
+        jniLibs.useLegacyPackaging = true
+        jniLibs.keepDebugSymbols.add("**/*tun2socks.so")
+    }
     externalNativeBuild {
         cmake {
             path "src/main/cpp/CMakeLists.txt"
@@ -50,7 +73,12 @@ android {
             jniLibs.srcDirs = ['libs']
         }
     }
-
+//    tasks.withType(Copy) {
+//        if (name.startsWith('merge')) {
+//            from('build/tun2socks')
+//            into('src/main/libs')
+//        }
+//    }
 }
 
 dependencies {
@@ -90,37 +118,4 @@ dependencies {
 }
 
 
-// Workaround for macOS(arm64) and macOS(intel) since it otherwise does not find swig and
-// I cannot get the Exec task to respect the PATH environment :(
-//if (new File("/opt/homebrew/bin/swig").exists()) {
-//    swigcmd = "/opt/homebrew/bin/swig";
-//} else if (new File("/usr/local/bin/swig").exists()) {
-//    swigcmd = "/usr/local/bin/swig";
-//}
-//
-//public File registerGenTask(String variantName, String variantDirName) {
-//    String swigcmd = "swig";
-//    File baseDir = new File(getBuildDir(), "generated/source/ovpn3swig/" + variantDirName);
-//    File genDir = new File(baseDir, "net/openvpn/ovpn3");
-//
-//    TaskProvider<Exec> generateOpenVPN3SwigTask = getTasks().register("generateOpenVPN3Swig" + variantName, Exec.class, task -> {
-//        task.doFirst(t -> {
-//            mkdir(genDir);
-//        });
-//        task.commandLine(swigcmd, "-outdir", genDir.getAbsolutePath(), "-outcurrentdir", "-c++", "-java", "-package", "net.openvpn.ovpn3",
-//                "-Isrc/main/cpp/openvpn3/client", "-Isrc/main/cpp/openvpn3/",
-//                "-DOPENVPN_PLATFORM_ANDROID",
-//                "-o", genDir.getAbsolutePath() + "/ovpncli_wrap.cxx", "-oh", genDir.getAbsolutePath() + "/ovpncli_wrap.h",
-//                "src/main/cpp/openvpn3/client/ovpncli.i");
-//        task.getInputs().files("src/main/cpp/openvpn3/client/ovpncli.i");
-//        task.getOutputs().dir(genDir);
-//    });
-//
-//    return baseDir;
-//}
-//
-//android.getApplicationVariants().all(variant -> {
-//    File sourceDir = registerGenTask(variant.getName(), variant.getBaseName().replace("-", "/"));
-//    TaskProvider<Exec> generateOpenVPN3SwigTask = getTasks().named("generateOpenVPN3Swig" + variant.getName(), Exec.class);
-//    variant.registerJavaGeneratingTask(generateOpenVPN3SwigTask.get(), sourceDir);
-//});
+

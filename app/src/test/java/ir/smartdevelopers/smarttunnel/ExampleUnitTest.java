@@ -446,6 +446,7 @@ public class ExampleUnitTest {
     }
     @Test
     public void dnsResolverTest(){
-
+        Random random = new Random();
+        int r = random.nextInt(1);
     }
 }

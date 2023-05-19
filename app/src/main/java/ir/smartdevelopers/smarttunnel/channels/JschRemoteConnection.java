@@ -77,8 +77,8 @@ public class JschRemoteConnection extends RemoteConnection {
     }
 
     @Override
-    public DirectTCPChannel startDirectTCPChannel(String localAddress, int localPort, String remoteAddress, int remotePort) throws RemoteConnectionException {
-        JschDirectTcpChannel channel = new JschDirectTcpChannel(remoteAddress, remotePort, localAddress, localPort);
+    public DirectTCPChannel startDirectTCPChannel( String remoteAddress, int remotePort) throws RemoteConnectionException {
+        JschDirectTcpChannel channel = new JschDirectTcpChannel(remoteAddress, remotePort);
         channel.start();
         return channel;
     }
@@ -103,6 +103,7 @@ public class JschRemoteConnection extends RemoteConnection {
     public void connect() throws RemoteConnectionException {
         JSch jSch = new JSch();
         jSch.setHostKeyRepository(new AcceptAllHostRepo());
+
 
         if (privateKey != null) {
             try {
@@ -134,7 +135,9 @@ public class JschRemoteConnection extends RemoteConnection {
             String serverAddr = ip == null ? serverAddress : ip;
             Logger.logDebug("Server address is =" + serverAddr);
             mSession = jSch.getSession(username, serverAddr, serverPort);
-
+//            mSession.setConfig("cipher.s2c", "aes256-cbc,3des-cbc,blowfish-cbc");
+//            mSession.setConfig("cipher.c2s", "aes256-cbc,3des-cbc,blowfish-cbc");
+//            mSession.setConfig("CheckCiphers", "aes256-cbc");
 
             if (mProxy instanceof HttpProxy) {
                 mSession.setProxy(new ProxyHTTP(mProxy.getAddress(), mProxy.getPort()));
@@ -234,15 +237,12 @@ public class JschRemoteConnection extends RemoteConnection {
         Socket mSocket;
         String remoteAddress;
         int remotePort;
-        String localAddress;
-        int localPort;
         private ChannelDirectTCPIP mChannel;
 
-        public JschDirectTcpChannel(String remoteAddress, int remotePort, String localAddress, int localPort) {
+        public JschDirectTcpChannel(String remoteAddress, int remotePort) {
             this.remoteAddress = remoteAddress;
             this.remotePort = remotePort;
-            this.localAddress = localAddress;
-            this.localPort = localPort;
+
         }
 
         @Override
@@ -289,7 +289,7 @@ public class JschRemoteConnection extends RemoteConnection {
                 if (mChannel != null) {
                     mChannel.disconnect();
                 }
-                stopLocalPortForwarding(localAddress, localPort);
+//                stopLocalPortForwarding(localAddress, localPort);
             } catch (IOException e) {
                 throw new RemoteConnectionException(e);
             }
@@ -306,9 +306,12 @@ public class JschRemoteConnection extends RemoteConnection {
             }
             return false;
         }
+
+        @Override
+        public void setTimeOut(int timeOut) {
+
+        }
     }
 
-    public interface OnDisconnectListener {
-        void onDisconnected();
-    }
+
 }

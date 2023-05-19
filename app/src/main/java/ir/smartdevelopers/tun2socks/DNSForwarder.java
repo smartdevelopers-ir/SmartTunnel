@@ -10,9 +10,11 @@ import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.net.Socket;
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.concurrent.Callable;
 
 import ir.smartdevelopers.smarttunnel.BuildConfig;
 import ir.smartdevelopers.smarttunnel.utils.ArrayUtil;
@@ -21,14 +23,19 @@ import ir.smartdevelopers.smarttunnel.utils.Logger;
 
 public class DNSForwarder implements Runnable{
     private final DatagramPacket mPacket;
-    private final String localDnsServerAddress;
-    private final int localDnsServerPort;
+    private final String dnsServerAddress;
+    private final String socksAddress;
+    private final int dnsServerPort;
+    private final int socksPort;
 
-    public DNSForwarder( DatagramPacket packet, String localDnsServerAddress, int localDnsServerPort)  {
+    public DNSForwarder( DatagramPacket packet, String dnsServerAddress,
+                         int dnsServerPort,String socksAddress,int socksPort)  {
 
         mPacket = packet;
-        this.localDnsServerAddress = localDnsServerAddress;
-        this.localDnsServerPort = localDnsServerPort;
+        this.dnsServerAddress = dnsServerAddress;
+        this.dnsServerPort = dnsServerPort;
+        this.socksAddress = socksAddress;
+        this.socksPort = socksPort;
     }
 
     @Override
@@ -38,11 +45,12 @@ public class DNSForwarder implements Runnable{
         byte[] lengthBytes = ByteUtil.getByteFromInt(udpData.length, 2);
         ArrayUtil.replace(tcpData, 0, lengthBytes);
         ArrayUtil.replace(tcpData, 2, udpData);
-        try (Socket dnsServerSocket = new Socket();
+        Proxy proxy = new Proxy(Proxy.Type.SOCKS,new InetSocketAddress(socksAddress,socksPort));
+        try (Socket dnsServerSocket = new Socket(proxy);
              DatagramSocket mSocket = new DatagramSocket()){
-
             dnsServerSocket.setTcpNoDelay(true);
-            dnsServerSocket.connect(new InetSocketAddress(localDnsServerAddress, localDnsServerPort));
+            dnsServerSocket.setSoTimeout(8000);
+            dnsServerSocket.connect(new InetSocketAddress(dnsServerAddress, dnsServerPort));
             InputStream dnsIn = dnsServerSocket.getInputStream();
             OutputStream dnsOut = dnsServerSocket.getOutputStream();
             dnsOut.write(tcpData);
@@ -77,7 +85,7 @@ public class DNSForwarder implements Runnable{
             dnsIn.close();
             dnsOut.close();
         } catch (IOException e) {
-            //ignore
+            Logger.logDebug("dns timeout");
         }
     }
 }

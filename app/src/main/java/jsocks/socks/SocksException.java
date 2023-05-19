@@ -71,8 +71,8 @@ public class SocksException extends java.io.IOException{
                   "Authentication failed",
                   "General SOCKS fault" };
 
-   String errString;
-   int errCode;
+   public String errString;
+   public int errCode;
 
 }//End of SocksException class
 

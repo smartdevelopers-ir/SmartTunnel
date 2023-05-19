@@ -1,5 +1,6 @@
 package ir.smartdevelopers.smarttunnel.ui.models;
 
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
@@ -12,6 +13,7 @@ import com.jcraft.jsch.HostKeyRepository;
 
 import java.io.File;
 import java.io.FileDescriptor;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -29,6 +31,7 @@ import ir.smartdevelopers.smarttunnel.MyVpnService;
 import ir.smartdevelopers.smarttunnel.R;
 import ir.smartdevelopers.smarttunnel.channels.JschRemoteConnection;
 import ir.smartdevelopers.smarttunnel.channels.RemoteConnection;
+import ir.smartdevelopers.smarttunnel.channels.Ssh2RemoteConnection;
 import ir.smartdevelopers.smarttunnel.exceptions.RemoteConnectionException;
 import ir.smartdevelopers.smarttunnel.ui.classes.AcceptAllHostRepo;
 import ir.smartdevelopers.smarttunnel.ui.exceptions.ConfigException;
@@ -171,7 +174,9 @@ public class SSHConfig extends Config implements JschRemoteConnection.OnDisconne
             if (dns == null){
                 throw new ConfigException("DNS not set");
             }
-            JschRemoteConnection connection = new JschRemoteConnection(proxifiedAddress,proxifiedPort,mUsername,mPassword,
+//            JschRemoteConnection connection = new JschRemoteConnection(proxifiedAddress,proxifiedPort,mUsername,mPassword,
+//                    isServerAddressLocked(), isServerPortLocked(), isUsernameLocked(),dns,preferIPv6);
+            Ssh2RemoteConnection connection = new Ssh2RemoteConnection(proxifiedAddress,proxifiedPort,mUsername,mPassword,
                     isServerAddressLocked(), isServerPortLocked(), isUsernameLocked(),dns,preferIPv6);
             connection.setOnDisconnectListener(this);
             connection.setPrivateKey(privateKey);
@@ -183,17 +188,20 @@ public class SSHConfig extends Config implements JschRemoteConnection.OnDisconne
             if (mConfigMode == MODE_PROXY) {
                 return;
             }
+            int socksPort = 0;
 
             if (useRemoteSocksServer){
-                mRemoteConnection.startLocalPortForwarding(LOCAL_SOCKS_ADDRESS,LOCAL_SOCKS_PORT,
+                socksPort =mRemoteConnection.startLocalPortForwarding(LOCAL_SOCKS_ADDRESS,LOCAL_SOCKS_PORT,
                         mRemoteSocksAddress,mRemoteSocksPort);
+
             }else {
                 mRemoteConnection.startDynamicForwarder(LOCAL_SOCKS_PORT);
+                socksPort = LOCAL_SOCKS_PORT;
             }
 
-            mRemoteConnection.startLocalPortForwarding("127.0.0.1",mUDPGWPort,"127.0.0.1",mUDPGWPort);
+            int udpdwPort = mRemoteConnection.startLocalPortForwarding("127.0.0.1",mUDPGWPort,"127.0.0.1",mUDPGWPort);
             Logger.logMessage(new LogItem("Starting DNS forwarding"));
-            startDnsGw(dns);
+            startDnsGw(dns,LOCAL_SOCKS_ADDRESS,socksPort);
             Logger.logMessage(new LogItem("DNS forwarding started"));
             fetchExpireDate();
             mFileDescriptor = openTun();
@@ -242,7 +250,7 @@ public class SSHConfig extends Config implements JschRemoteConnection.OnDisconne
         }
     }
 
-    private void startDnsGw(String dns) throws RemoteConnectionException {
+    private void startDnsGw(String dns,String socksAddress,int socksPort) throws RemoteConnectionException {
 
         if (!mRemoteConnection.isPortInUse(LOCAL_TCP_DNS_PORT)){
             mRemoteConnection.startLocalPortForwarding(LOCAL_DNS_ADDRESS,LOCAL_TCP_DNS_PORT,dns,53);
@@ -250,7 +258,7 @@ public class SSHConfig extends Config implements JschRemoteConnection.OnDisconne
         if (mDnsgwThread != null){
             mDnsgwThread.interrupt();
         }
-        mDnsgwThread  = new DnsgwThread();
+        mDnsgwThread  = new DnsgwThread(dns, socksPort, socksAddress);
         mDnsgwThread.start();
     }
 
@@ -263,9 +271,15 @@ public class SSHConfig extends Config implements JschRemoteConnection.OnDisconne
 
     private class DnsgwThread extends Thread{
         private DatagramSocket mSocket;
+        private String mDnsServer;
+        private int socksPort;
+        private String socksAddress;
 
-        public DnsgwThread() {
+        public DnsgwThread(String dns, int socksPort, String socksAddress) {
+            this.socksPort = socksPort;
+            this.socksAddress = socksAddress;
             setName("DnsgwThread");
+            mDnsServer = dns;
         }
 
         @Override
@@ -274,11 +288,12 @@ public class SSHConfig extends Config implements JschRemoteConnection.OnDisconne
 
                 mSocket= new DatagramSocket(LOCAL_UDP_DNS_PORT);
                 while (!isCanceled() || !mDnsgwThread.isInterrupted()){
-                    byte[] buff = new byte[580];
+                    byte[] buff = new byte[2024];
                     DatagramPacket packet  =  new DatagramPacket(buff,buff.length);
                     mSocket.receive(packet);
                     if (packet.getLength() > 0){
-                        new Thread(new DNSForwarder(packet,LOCAL_DNS_ADDRESS,LOCAL_TCP_DNS_PORT)).start();
+//                        new Thread(new DynamicDNSForwarder(packet,mDnsServer,53,mRemoteConnection)).start();
+                        new Thread(new DNSForwarder(packet,mDnsServer,53,socksAddress,socksPort)).start();
                     }
                 }
             } catch (IOException e) {
@@ -292,13 +307,73 @@ public class SSHConfig extends Config implements JschRemoteConnection.OnDisconne
             mSocket.close();
         }
     }
+    private static boolean writeMiniVPNBinary(Context context, File mvpnout) {
+        try {
+            InputStream mvpn;
 
+            try {
+                mvpn = context.getAssets().open("tun2socks.armeabi-v7a");
+            } catch (IOException errabi) {
+//                Logger.logInfo("Failed getting assets for architecture " + abi);
+                return false;
+            }
+
+
+            FileOutputStream fout = new FileOutputStream(mvpnout);
+
+            byte[] buf = new byte[4096];
+
+            int lenread = mvpn.read(buf);
+            while (lenread > 0) {
+                fout.write(buf, 0, lenread);
+                lenread = mvpn.read(buf);
+            }
+            fout.close();
+
+            if (!mvpnout.setExecutable(true)) {
+                Logger.logError("Failed to make OpenVPN executable");
+                return false;
+            }
+
+
+            return true;
+        } catch (IOException e) {
+            Logger.logException(e);
+            return false;
+        }
+
+    }
+
+    private String getTun2socksPath(){
+        String[] abis = Build.SUPPORTED_ABIS;
+
+//        if (!nativeAPI.equals(abis[0])) {
+//            Logger.logWarning(String.format("abi mismatcehd %s %s", Arrays.toString(abis), nativeAPI));
+//            abis = new String[]{nativeAPI};
+//        }
+//        for (String abi : abis) {
+
+            File vpnExecutable = new File(mVpnService.getCacheDir(), "c_" + "tun2socks.armeabi-v7a");
+            if ((vpnExecutable.exists() && vpnExecutable.canExecute()) || writeMiniVPNBinary(mVpnService.getApplicationContext(),
+                    vpnExecutable)) {
+                return vpnExecutable.getPath();
+            }
+//        }
+        return null;
+    }
     private void runTun2socks(String socksAddress,int socksPort) {
 
         final String TUN2SOCKS = "libtun2socks.so";
         String logLevel = BuildConfig.DEBUG ? "5" : "0";
+        File soFile=new File(mVpnService.getApplicationContext().getApplicationInfo().nativeLibraryDir,TUN2SOCKS);
+        String soPath = soFile.getAbsolutePath();
+//        String soPath = getTun2socksPath();
+        if (soPath == null){
+            Logger.logError("soPath is null");
+            return;
+        }
         String[] cmd = Arrays.asList(
-                new File(mVpnService.getApplicationContext().getApplicationInfo().nativeLibraryDir,TUN2SOCKS).getAbsolutePath(),
+                soPath,
                 "--netif-ipaddr", PRIVATE_VLAN4_ROUTER,
                 "--netif-netmask", PRIVATE_NETMASK,
                 "--socks-server-addr", String.format(Locale.ENGLISH,"%s:%d",socksAddress,socksPort),
@@ -326,10 +401,7 @@ public class SSHConfig extends Config implements JschRemoteConnection.OnDisconne
                     Logger.logDebug("Tun2Socks started");
                     mTun2SocksProcess.waitFor();
                     Logger.logDebug("Tun2Socks stopped");
-                    if (!isCanceled()){
-                        Logger.logDebug("Not canceled so Tun2Socks restarting");
-                        runTun2socks(socksAddress,socksPort);
-                    }
+
                     try {
                         if (in.available() > 0){
                             byte[] buff=new byte[1024*4];
@@ -341,6 +413,10 @@ public class SSHConfig extends Config implements JschRemoteConnection.OnDisconne
                     } catch (IOException ex) {
                         //ignore
                     }
+//                    if (!isCanceled()){
+//                        Logger.logDebug("Not canceled so Tun2Socks restarting");
+//                        runTun2socks(socksAddress,socksPort);
+//                    }
                 } catch (InterruptedException e) {
 
                     if (!isCanceled()){
@@ -406,8 +482,8 @@ public class SSHConfig extends Config implements JschRemoteConnection.OnDisconne
 
         builder.addAddress(PRIVATE_VLAN4_CLIENT,24);
         builder.addRoute(PRIVATE_VLAN4_ROUTER,0);
-        builder.addAddress(PRIVATE_VLAN6_CLIENT,64);
-        builder.addRoute(PRIVATE_VLAN6_ROUTER,0);
+//        builder.addAddress(PRIVATE_VLAN6_CLIENT,64);
+//        builder.addRoute(PRIVATE_VLAN6_ROUTER,0);
 
         builder.setSession("SmartTunnel").setMtu(PRIVATE_MTU);
 
