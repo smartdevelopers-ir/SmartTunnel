@@ -22,4 +22,6 @@
     <string name="download_update_descriptin">در حال دانلود بروزرسانی Smart Tunnel</string>
     <string name="expire_date_message">اکانت شما در %d روز ، %d ساعت و %d دقیقه دیگر منقضی میشود</string>
     <string name="expire_date">تاریخ انقضا</string>
+    <string name="allow_install_app">نصب برنامه</string>
+    <string name="allow_install_app_message">در صفحه بعدی که باز میشود تیک نرم افزار Smart Tunnel را فعال نمایید</string>
 </resources>

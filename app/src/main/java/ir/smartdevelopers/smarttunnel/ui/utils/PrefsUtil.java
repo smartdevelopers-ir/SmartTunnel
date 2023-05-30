@@ -261,6 +261,15 @@ public class PrefsUtil {
     public static void setUpdateUrl(Context context,String url){
         getGeneralPrefs(context).edit().putString("update_url",url).apply();
     }
+    public static void setDownloadedApkId(Context context,String downloadedUri,long downloadedId){
+        getGeneralPrefs(context).edit().putLong(downloadedUri,downloadedId).apply();
+    }
+    public static void deleteDownloadedApkId(Context context,String downloadedUri){
+        getGeneralPrefs(context).edit().remove(downloadedUri).apply();
+    }
+    public static long getDownloadedApkId(Context context,String downloadedUri){
+        return getGeneralPrefs(context).getLong(downloadedUri,-1);
+    }
     public static String getUpdateUrl(Context context){
         return getGeneralPrefs(context).getString("update_url", null);
     }

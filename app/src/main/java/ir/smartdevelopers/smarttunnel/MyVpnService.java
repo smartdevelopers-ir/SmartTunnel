@@ -64,7 +64,8 @@ public class MyVpnService extends VpnService implements NetworkStateReceiver.Cal
     public static final String ACTION_RETRYING = "retrying";
     public static final String ACTION_DISCONNECTING = "disconnecting";
     private static final int NOTIFICATION_ID = 50;
-    public static final String NOTIFICATION_CHANNEL_BG_ID = "smart_tunnel_notification_bg";
+    public static final String NOTIFICATION_CHANNEL_BG_ID_OLD = "smart_tunnel_notification_bg";
+    public static final String NOTIFICATION_CHANNEL_BG_ID = "smart_tunnel_notification_bg_new";
     private static final String PRIVATE_VLAN4_CLIENT = "10.0.0.1";
     private static final String PRIVATE_VLAN4_ROUTER = "10.0.0.2";
 

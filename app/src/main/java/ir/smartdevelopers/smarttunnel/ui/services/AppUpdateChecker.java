@@ -1,7 +1,9 @@
 package ir.smartdevelopers.smarttunnel.ui.services;
 
+import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Environment;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
@@ -16,6 +18,7 @@ import androidx.work.WorkerParameters;
 
 import com.google.gson.Gson;
 
+import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
@@ -23,6 +26,7 @@ import java.net.URLConnection;
 import ir.smartdevelopers.smarttunnel.BuildConfig;
 import ir.smartdevelopers.smarttunnel.ui.activities.MainActivity;
 import ir.smartdevelopers.smarttunnel.ui.utils.PrefsUtil;
+import ir.smartdevelopers.smarttunnel.ui.utils.Util;
 
 public class AppUpdateChecker extends Worker {
     public AppUpdateChecker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
@@ -43,6 +47,12 @@ public class AppUpdateChecker extends Worker {
             if (!TextUtils.isEmpty(updateObject.url)){
                 notifyUpdateAvailable(updateObject.url);
             }
+        }else{
+            File downloadFolder = getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+            if (downloadFolder.exists()){
+                Util.deleteAllFiles(downloadFolder);
+            }
+
         }
         return Result.success();
     }
@@ -55,7 +65,7 @@ public class AppUpdateChecker extends Worker {
 
     private String getUpdateJson(){
         try {
-            URLConnection connection=  new URL("https://raw.githubusercontent.com/smartdevelopers-ir/SmartTunnel/v1.0.2/update").openConnection();
+            URLConnection connection=  new URL("https://raw.githubusercontent.com/smartdevelopers-ir/SmartTunnel/master/update").openConnection();
             connection.connect();
 
             InputStream inputStream = connection.getInputStream();

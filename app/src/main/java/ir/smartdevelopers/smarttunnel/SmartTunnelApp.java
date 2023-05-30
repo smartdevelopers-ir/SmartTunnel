@@ -80,8 +80,11 @@ public class SmartTunnelApp extends Application {
                 .Builder(MyVpnService.NOTIFICATION_CHANNEL_BG_ID, NotificationManagerCompat.IMPORTANCE_DEFAULT);
         NotificationChannelCompat channelCompat = channelBuilder.setName(getString(R.string.notification_bg_name))
                 .setDescription(getString(R.string.notification_bg_description))
+                .setSound(null,null)
+                .setVibrationEnabled(false)
                 .build();
         NotificationManagerCompat managerCompat = NotificationManagerCompat.from(getApplicationContext());
+        managerCompat.deleteNotificationChannel(MyVpnService.NOTIFICATION_CHANNEL_BG_ID_OLD);
         managerCompat.createNotificationChannel(channelCompat);
     }
     private void enableStrictModes() {

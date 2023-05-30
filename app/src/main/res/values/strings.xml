@@ -169,5 +169,7 @@
     <string name="error_converting_config" translatable="false">Error in saving converted config</string>
     <string name="expire_date_message">Your account will expire in %d days , %d hours and %d minute</string>
     <string name="expire_date">Expire Date</string>
+    <string name="allow_install_app">Install App</string>
+    <string name="allow_install_app_message">In the next screen please Turn ON Smart Tunnel app switch</string>
 
 </resources>

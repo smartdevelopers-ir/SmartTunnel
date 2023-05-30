@@ -9,6 +9,7 @@ import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.Settings;
 import android.view.MenuItem;
 import android.view.View;
@@ -39,6 +40,8 @@ import ir.smartdevelopers.smarttunnel.ui.fragments.HomeFragment;
 import ir.smartdevelopers.smarttunnel.ui.fragments.LogFragment;
 import ir.smartdevelopers.smarttunnel.ui.services.AppUpdateChecker;
 import ir.smartdevelopers.smarttunnel.ui.utils.AlertUtil;
+import ir.smartdevelopers.smarttunnel.ui.utils.PrefsUtil;
+import ir.smartdevelopers.smarttunnel.ui.utils.Util;
 
 public class MainActivity extends AppCompatActivity {
     public static final String ACTION_UPDATE_AVAILABLE = "ir.smartdevelopers.smarttunnel.ACTION_UPDATE_AVAILABLE";
@@ -135,6 +138,8 @@ public class MainActivity extends AppCompatActivity {
                  if (intent != null && DownloadManager.ACTION_DOWNLOAD_COMPLETE.equals(intent.getAction())) {
                     long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID,0);
                     if (id != 0){
+                        String url = PrefsUtil.getUpdateUrl(getApplicationContext());
+                        PrefsUtil.setDownloadedApkId(getApplicationContext(),url,id);
                         openDownloadedApk(id);
                     }
                 }
@@ -187,8 +192,18 @@ public class MainActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             if(!getPackageManager().canRequestPackageInstalls()){
                 downloadedId = id;
-                startActivityForResult(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
-                        .setData(Uri.parse(String.format("package:%s", getPackageName()))), 100);
+                MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
+                builder.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                        startActivityForResult(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
+                                .setData(Uri.parse(String.format("package:%s", getPackageName()))), 100);
+                    }
+                }).setNegativeButton(R.string.cancel,null)
+                        .setTitle(R.string.allow_install_app)
+                        .setMessage(R.string.allow_install_app_message);
+                builder.show();
                 return;
             }
         }
@@ -205,9 +220,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == 100 ){
-            if (resultCode == RESULT_OK){
-                openDownloadedApk(downloadedId);
-            }
+
+            openDownloadedApk(downloadedId);
+
         }
     }
 
@@ -228,10 +243,23 @@ public class MainActivity extends AppCompatActivity {
 
     private void startUpdate(String url) {
         DownloadManager downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+        long lastDownloadedId = PrefsUtil.getDownloadedApkId(getApplicationContext(),url);
+        if (lastDownloadedId != -1){
+            Uri uri = downloadManager.getUriForDownloadedFile(lastDownloadedId);
+            if (Util.exists(getApplicationContext(),uri)){
+                openDownloadedApk(lastDownloadedId);
+                return;
+            }else {
+                PrefsUtil.deleteDownloadedApkId(getApplicationContext(),url);
+            }
+        }
+
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
         request.setDescription(getString(R.string.download_update_descriptin));
         request.setTitle(getString(R.string.app_name));
         request.setVisibleInDownloadsUi(true);
+        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+        request.setDestinationInExternalFilesDir(getApplicationContext(),Environment.DIRECTORY_DOWNLOADS,"smart_tunnel.apk");
         long id = downloadManager.enqueue(request);
     }
 

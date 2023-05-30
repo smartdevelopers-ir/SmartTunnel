@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission
         android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
@@ -77,7 +78,8 @@
                     android:host="*" />
 
                 <data
-                    android:port="*" />
+                    android:port="*"
+                    tools:ignore="AppLinkUrlError" />
             </intent-filter>
             <intent-filter>
                 <action
@@ -156,6 +158,13 @@
 
             />
 
+        <receiver android:name=".ui.services.DownloadCompleteReceiver"
+            android:permission="android.permission.SEND_DOWNLOAD_COMPLETED_INTENTS"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.DOWNLOAD_COMPLETE"/>
+            </intent-filter>
+        </receiver>
         <service
             android:name="ir.smartdevelopers.smarttunnel.MyVpnService"
             android:exported="false"

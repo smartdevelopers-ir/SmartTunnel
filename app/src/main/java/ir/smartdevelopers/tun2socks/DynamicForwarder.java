@@ -19,6 +19,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import ir.smartdevelopers.smarttunnel.utils.Logger;
 import jsocks.socks.CProxy;
 import jsocks.socks.ProxyMessage;
 import jsocks.socks.ProxyServer;
@@ -59,6 +60,7 @@ public class DynamicForwarder implements Runnable {
             //noinspection InfiniteLoopStatement
             while (true) {
                 Socket s = ss.accept();
+                s.setTcpNoDelay(true);
                 DynamicForward df = new DynamicForward(s, session, port);
                 (new Thread(df)).start();
             }
@@ -103,7 +105,8 @@ public class DynamicForwarder implements Runnable {
             if (_channel != null) {
                 startPipe(_channel);
             } else {
-                throw (new RuntimeException("onConnect() Failed to create Socket()"));
+//                throw (new RuntimeException("onConnect() Failed to create Socket()"));
+                Logger.logError("onConnect() Failed to create Socket()");
             }
 
         }

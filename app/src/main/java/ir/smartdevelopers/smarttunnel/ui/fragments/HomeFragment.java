@@ -2,6 +2,8 @@ package ir.smartdevelopers.smarttunnel.ui.fragments;
 
 import static android.app.Activity.RESULT_OK;
 
+import android.Manifest;
+import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -10,6 +12,7 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.graphics.drawable.TransitionDrawable;
 import android.net.VpnService;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -26,6 +29,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.core.text.HtmlCompat;
 import androidx.fragment.app.Fragment;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
@@ -56,8 +60,17 @@ public class HomeFragment extends Fragment {
                 @Override
                 public void onActivityResult(ActivityResult result) {
                     if (result.getResultCode() == RESULT_OK){
-                        connect();
+                        connect(true);
                     }
+                }
+            });
+    private ActivityResultLauncher<String> mNotificationPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(),
+            new ActivityResultCallback<Boolean>() {
+                @Override
+                public void onActivityResult(Boolean result) {
+
+                    connect(false);
+
                 }
             });
     @Override
@@ -169,12 +182,8 @@ public class HomeFragment extends Fragment {
                 return;
             }
             if (isDisconnected()){
-//                if (mServiceConnection != null){
-//                    if (mVpnService != null){
-//                        mVpnService.reset();
-//                    }
-//                }
-                connect();
+
+                connect(true);
             }else {
                 disconnect();
             }
@@ -205,7 +214,7 @@ public class HomeFragment extends Fragment {
         startActivity(new Intent(requireContext(), SettingsActivity.class));
     }
 
-    private void connect() {
+    private void connect(boolean checkNotificationPermission) {
         if (!NetworkUtils.isConnected(requireContext())){
             AlertUtil.showToast(requireContext(),R.string.no_connection_message,Toast.LENGTH_LONG, AlertUtil.Type.ERROR);
             return;
@@ -214,6 +223,14 @@ public class HomeFragment extends Fragment {
         if (vpnServiceIntent !=null){
             mVpnServicePermissionLauncher.launch(vpnServiceIntent);
             return;
+        }
+        if (Build.VERSION.SDK_INT >= 33){
+            if (checkNotificationPermission){
+                NotificationManagerCompat manager = NotificationManagerCompat.from(requireContext());
+                if (!manager.areNotificationsEnabled()){
+                    mNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+                }
+            }
         }
         ConfigListModel currentConfig = PrefsUtil.getSelectedConfig(requireContext());
         if (currentConfig==null){

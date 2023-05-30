@@ -1,6 +1,7 @@
 package ir.smartdevelopers.smarttunnel.ui.utils;
 
 import android.annotation.SuppressLint;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -17,7 +18,11 @@ import android.view.WindowInsets;
 import androidx.annotation.NonNull;
 import androidx.core.view.WindowInsetsCompat;
 
+import java.io.File;
 import java.io.FileDescriptor;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -153,5 +158,38 @@ public class Util {
             //ignore
         }
         return fdVal;
+    }
+    public static boolean exists(Context context,Uri uri){
+        if (uri == null){
+            return false;
+        }
+        boolean exists = false;
+        try (InputStream in = context.getContentResolver().openInputStream(uri)){
+            exists = true;
+        }  catch (IOException e) {
+            // ignore
+        }
+        return  exists;
+    }
+    public static void deleteAllFiles(File folder){
+        try {
+            if (folder.isFile()){
+                folder.delete();
+                return;
+            }
+            if (folder.isDirectory()){
+                File[] files = folder.listFiles();
+                if (files != null){
+                    for (File f : files){
+                        if (f.isDirectory()){
+                            deleteAllFiles(f);
+                        }
+                        f.delete();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            //ignore
+        }
     }
 }
