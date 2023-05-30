@@ -2,15 +2,17 @@ package ir.smartdevelopers.smarttunnel.ui.fragments;
 
 import static android.app.Activity.RESULT_OK;
 
+import android.Manifest;
+import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
 import android.net.VpnService;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -27,22 +29,25 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.core.text.HtmlCompat;
 import androidx.fragment.app.Fragment;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import java.net.Proxy;
 import java.util.List;
 import java.util.Objects;
 
+import de.blinkt.openvpn.core.NetworkUtils;
 import ir.smartdevelopers.smarttunnel.MyVpnService;
 import ir.smartdevelopers.smarttunnel.R;
 import ir.smartdevelopers.smarttunnel.databinding.FragmentHomeBinding;
 import ir.smartdevelopers.smarttunnel.ui.activities.SettingsActivity;
 import ir.smartdevelopers.smarttunnel.ui.models.ConfigListModel;
 import ir.smartdevelopers.smarttunnel.ui.models.LogItem;
+import ir.smartdevelopers.smarttunnel.ui.utils.AlertUtil;
 import ir.smartdevelopers.smarttunnel.ui.utils.PrefsUtil;
 import ir.smartdevelopers.smarttunnel.ui.utils.Util;
+import ir.smartdevelopers.smarttunnel.utils.Logger;
 
 public class HomeFragment extends Fragment {
     private FragmentHomeBinding mBinding;
@@ -55,8 +60,17 @@ public class HomeFragment extends Fragment {
                 @Override
                 public void onActivityResult(ActivityResult result) {
                     if (result.getResultCode() == RESULT_OK){
-                        connect();
+                        connect(true);
                     }
+                }
+            });
+    private ActivityResultLauncher<String> mNotificationPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(),
+            new ActivityResultCallback<Boolean>() {
+                @Override
+                public void onActivityResult(Boolean result) {
+
+                    connect(false);
+
                 }
             });
     @Override
@@ -112,10 +126,15 @@ public class HomeFragment extends Fragment {
                         case MyVpnService.ACTION_DISCONNECTED:
                             onDisconnect();
                             break;
+                        case MyVpnService.ACTION_DISCONNECTING:
+                            onDisconnecting();
+                            break;
                         case MyVpnService.ACTION_CONNECTING:
+                        case MyVpnService.ACTION_RETRYING:
                             onConnecting();
                             break;
                         case MyVpnService.ACTION_CONNECTED:
+
                             onConnect();
                             break;
                     }
@@ -128,7 +147,12 @@ public class HomeFragment extends Fragment {
         statusReceiverFilter.addAction(MyVpnService.ACTION_CONNECTED);
         manager.registerReceiver(mStatusReceiver,statusReceiverFilter);
 
+
+
+
     }
+
+
 
     private void manageConnectButtonState() {
         if (mVpnService!=null){
@@ -138,7 +162,11 @@ public class HomeFragment extends Fragment {
                     break;
                 case CONNECTING:
                 case NETWORK_ERROR:
+                case RETRYING:
                     onConnecting();
+                    break;
+                case DISCONNECTING:
+                    onDisconnecting();
                     break;
                 case DISCONNECTED:
                     onDisconnect();
@@ -149,13 +177,13 @@ public class HomeFragment extends Fragment {
 
     private void initViews() {
         mBinding.btnConnect.setOnClickListener(v->{
+            Logger.logDebug("button clicked");
+            if (isDisconnecting()){
+                return;
+            }
             if (isDisconnected()){
-                if (mServiceConnection != null){
-                    if (mVpnService != null){
-                        mVpnService.reset();
-                    }
-                }
-                connect();
+
+                connect(true);
             }else {
                 disconnect();
             }
@@ -169,7 +197,8 @@ public class HomeFragment extends Fragment {
 
         ConfigListModel currentConfig = PrefsUtil.getSelectedConfig(requireContext());
         if (currentConfig != null && !TextUtils.isEmpty(currentConfig.note)){
-            CharSequence note = HtmlCompat.fromHtml(currentConfig.note,HtmlCompat.FROM_HTML_MODE_COMPACT);
+            String htmlNote = currentConfig.note.replace("\n","<br />");
+            CharSequence note = HtmlCompat.fromHtml(htmlNote,HtmlCompat.FROM_HTML_MODE_COMPACT);
             mBinding.txtConfigNote.setText(note);
             mBinding.noteGroup.setVisibility(View.VISIBLE);
         }else {
@@ -185,28 +214,50 @@ public class HomeFragment extends Fragment {
         startActivity(new Intent(requireContext(), SettingsActivity.class));
     }
 
-    private void connect() {
+    private void connect(boolean checkNotificationPermission) {
+        if (!NetworkUtils.isConnected(requireContext())){
+            AlertUtil.showToast(requireContext(),R.string.no_connection_message,Toast.LENGTH_LONG, AlertUtil.Type.ERROR);
+            return;
+        }
         Intent vpnServiceIntent= VpnService.prepare(requireContext());
         if (vpnServiceIntent !=null){
             mVpnServicePermissionLauncher.launch(vpnServiceIntent);
             return;
         }
+        if (Build.VERSION.SDK_INT >= 33){
+            if (checkNotificationPermission){
+                NotificationManagerCompat manager = NotificationManagerCompat.from(requireContext());
+                if (!manager.areNotificationsEnabled()){
+                    mNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+                }
+            }
+        }
         ConfigListModel currentConfig = PrefsUtil.getSelectedConfig(requireContext());
         if (currentConfig==null){
-            Toast.makeText(requireContext(), R.string.selecet_config, Toast.LENGTH_SHORT).show();
+            AlertUtil.showToast(requireContext(), R.string.selecet_config, Toast.LENGTH_SHORT, AlertUtil.Type.WARNING);
             return;
         }
         resetLogs();
-        MyVpnService.connect(requireContext(),currentConfig.configId,currentConfig.type);
+        MyVpnService.connect(requireContext(),currentConfig.configId,currentConfig.type,MyVpnService.MODE_CONNECT);
         onConnecting();
     }
 
     private void onConnecting(){
-        if (Objects.equals(mBinding.btnConnectBorder.getTag(),"connecting")){
+        if (Objects.equals(mBinding.btnConnectBorder.getTag(),"connecting") ){
             return;
         }
+        mBinding.btnConnectBorder.setTag("connecting");
         startConnectingAnimation();
         mBinding.txtConnectionNote.setText(R.string.connecting_);
+        transitBgToDisconnected();
+    }
+    private void onDisconnecting(){
+        if (Objects.equals(mBinding.btnConnectBorder.getTag(),"disconnecting")){
+            return;
+        }
+        mBinding.btnConnectBorder.setTag("disconnecting");
+        startConnectingAnimation();
+        mBinding.txtConnectionNote.setText(R.string.disconncting);
         transitBgToDisconnected();
     }
     private void onConnect(){
@@ -240,9 +291,17 @@ public class HomeFragment extends Fragment {
         }
         return true;
     }
+    private boolean isDisconnecting() {
+        if (mVpnService!=null){
+            return mVpnService.mStatus == MyVpnService.Status.DISCONNECTING;
+        }
+        return true;
+    }
     private void disconnect() {
+        Logger.logDebug("disconnect methode caled in home fragment");
+
         MyVpnService.disconnect(requireContext(),true);
-        onDisconnect();
+        onDisconnecting();
     }
     private void onDisconnect(){
         if(Objects.equals("disconnected",mBinding.btnConnectBorder.getTag())){
@@ -284,10 +343,7 @@ public class HomeFragment extends Fragment {
         }
     }
     private void startConnectingAnimation() {
-        if (Objects.equals(mBinding.btnConnectBorder.getTag(),"connecting")){
-            return;
-        }
-        mBinding.btnConnectBorder.setTag("connecting");
+
         mBinding.btnConnect.setBackgroundResource(R.drawable.btn_connect_activating);
         mBinding.btnConnectBorder.setImageResource(R.drawable.btn_connect_activating_border);
 

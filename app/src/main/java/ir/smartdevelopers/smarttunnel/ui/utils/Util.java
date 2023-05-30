@@ -1,5 +1,7 @@
 package ir.smartdevelopers.smarttunnel.ui.utils;
 
+import android.annotation.SuppressLint;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -7,7 +9,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
-import android.telecom.TelecomManager;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.view.View;
@@ -17,32 +18,23 @@ import android.view.WindowInsets;
 import androidx.annotation.NonNull;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.jcraft.jsch.jce.KeyPairGenECDSA;
-
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Method;
+import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
 import java.security.Key;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
-import de.blinkt.openvpn.core.NetworkUtils;
 import ir.smartdevelopers.smarttunnel.BuildConfig;
 import ir.smartdevelopers.smarttunnel.SmartTunnelApp;
 import ir.smartdevelopers.smarttunnel.ui.interfaces.OnCompleteListener;
@@ -149,5 +141,55 @@ public class Util {
 
     public static Uri getRawUri(Context context,int rawId){
         return Uri.parse("android.resource://" + context.getPackageName() + "/" + rawId);
+    }
+    @SuppressLint("DiscouragedPrivateApi")
+    public static int getSocketDescriptor(Socket socket){
+        int fdVal = -1;
+        try {
+            Method getFileDescriptor = Socket.class.getDeclaredMethod("getFileDescriptor$");
+            getFileDescriptor.setAccessible(true);
+            FileDescriptor fd = (FileDescriptor) getFileDescriptor.invoke(socket);
+            if (fd != null){
+                Method getInt = FileDescriptor.class.getDeclaredMethod("getInt$");
+                getInt.setAccessible(true);
+                fdVal = (int) getInt.invoke(fd);
+            }
+        }catch (Exception e){
+            //ignore
+        }
+        return fdVal;
+    }
+    public static boolean exists(Context context,Uri uri){
+        if (uri == null){
+            return false;
+        }
+        boolean exists = false;
+        try (InputStream in = context.getContentResolver().openInputStream(uri)){
+            exists = true;
+        }  catch (IOException e) {
+            // ignore
+        }
+        return  exists;
+    }
+    public static void deleteAllFiles(File folder){
+        try {
+            if (folder.isFile()){
+                folder.delete();
+                return;
+            }
+            if (folder.isDirectory()){
+                File[] files = folder.listFiles();
+                if (files != null){
+                    for (File f : files){
+                        if (f.isDirectory()){
+                            deleteAllFiles(f);
+                        }
+                        f.delete();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            //ignore
+        }
     }
 }

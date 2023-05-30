@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     tools:context=".ui.activities.AddSSHConfigActivity">
 <com.google.android.material.appbar.AppBarLayout
     android:id="@+id/appbar"
@@ -21,29 +22,29 @@
             android:layout_weight="1"
             android:layout_height="wrap_content"
             android:text="@string/add_ssh_config_title"
-            android:textAppearance="@style/TextAppearance.AppCompat.Title"
+            android:textAppearance="@style/TitleTextAppearance"
             android:layout_gravity="center_vertical"
             android:layout_marginStart="16dp"
             />
-        <com.google.android.material.textview.MaterialTextView
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnExport"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/export"
-            style="@style/TextButtonsStyle"
             android:textColor="@color/colorActiveText"
             android:textAllCaps="false"
             android:layout_gravity="center_vertical"
+            style="@style/TextButtonsStyle"
             />
-        <com.google.android.material.textview.MaterialTextView
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSave"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/save"
-            style="@style/TextButtonsStyle"
             android:textColor="@color/colorActiveText"
             android:textAllCaps="false"
             android:layout_gravity="center_vertical"
+            style="@style/TextButtonsStyle"
             />
     </LinearLayout>
 </com.google.android.material.appbar.AppBarLayout>

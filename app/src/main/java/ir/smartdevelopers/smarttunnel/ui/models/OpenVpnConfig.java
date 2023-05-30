@@ -1,10 +1,7 @@
 package ir.smartdevelopers.smarttunnel.ui.models;
 
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.net.ConnectivityManager;
 import android.net.ProxyInfo;
 import android.net.VpnService;
 import android.os.Build;
@@ -25,6 +22,8 @@ import com.jcraft.jsch.HostKeyRepository;
 import com.jcraft.jsch.JSchException;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Type;
 import java.net.Inet6Address;
@@ -106,7 +105,7 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
     private transient String mLastTunCfg;
     private transient String mRemoteGW;
     private transient Handler mRetryHandler;
-    private transient ParcelFileDescriptor mParcelFileDescriptor;
+    private transient Thread mExpireDateCheckThread;
 
 
 
@@ -208,6 +207,7 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
             JschRemoteConnection connection = new JschRemoteConnection(proxifiedAddress,proxifiedPort,
                     mUsername,mPassword, isServerAddressLocked(), isServerPortLocked(), isUsernameLocked(),
                     dns,preferIPv6);
+
             connection.setPrivateKey(privateKey);
             mRemoteConnection = connection;
             if (getProxy() instanceof HttpProxy) {
@@ -215,7 +215,8 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
             }
             mRemoteConnection.connect();
             Logger.logMessage(new LogItem("Connecting to OpenVPN server. please wait ..."));
-
+            mVpnService.protect(mRemoteConnection.getMainSocketDescriptor());
+            fetchExpireDate();
             if (profile.mConnections == null || profile.mConnections.length == 0){
                 mState = State.DISCONNECTING;
                 cancel();
@@ -275,23 +276,23 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
                     throw new ConfigException("Can not connect to OpenVpn client");
                 }
             }
-            Runnable processThread;
+
             if (useOpenVPN3) {
                 OpenVPNManagement mOpenVPN3 = instantiateOpenVPN3Core();
-                processThread = (Runnable) mOpenVPN3;
+                mOpenVPNThread = (Runnable) mOpenVPN3;
                 mManagement = mOpenVPN3;
             } else {
-                processThread = new OpenVPNThread(mVpnService, argv, nativeLibraryDirectory, tmpDir);
+                mOpenVPNThread = new OpenVPNThread(mVpnService, argv, nativeLibraryDirectory, tmpDir);
             }
             synchronized (mProcessLock) {
-                mProcessThread = new Thread(processThread, "OpenVPNProcessThread");
+                mProcessThread = new Thread(mOpenVPNThread, "OpenVPNProcessThread");
                 mProcessThread.start();
             }
 
             if (!useOpenVPN3) {
                 try {
                     profile.writeConfigFileOutput(mVpnService.getApplicationContext(),
-                            ((OpenVPNThread) processThread).getOpenVPNStdin());
+                            ((OpenVPNThread) mOpenVPNThread).getOpenVPNStdin());
                 } catch (IOException | ExecutionException | InterruptedException e) {
                     Logger.logStyledMessage(String.format("Error generating config file %s", e.getMessage()),"#FFBA44",false);
                     mState = State.DISCONNECTING;
@@ -314,6 +315,38 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
         }
     }
 
+    private void fetchExpireDate() {
+        try {
+            mRemoteConnection.startLocalPortForwarding("127.0.0.1",6161,"127.0.0.1",6161);
+            mExpireDateCheckThread = new Thread(()->{
+                try(Socket socket = new Socket("127.0.0.1",6161);
+                    OutputStream outputStream = socket.getOutputStream();
+                    InputStream inputStream = socket.getInputStream()
+                ) {
+                    outputStream.write((mUsername+"\n").getBytes());
+                    byte[] buff = new byte[256];
+                    int len = 0;
+                    len = inputStream.read(buff);
+                    if (len > 0){
+                        String date = new String(buff,0,len).trim();
+                        mVpnService.onExpireDateReceived(date);
+                    }
+
+                } catch (Exception e) {
+                    //ignore
+                }finally {
+                    try {
+                        mRemoteConnection.stopLocalPortForwarding("127.0.0.1",6161);
+                    } catch (RemoteConnectionException e) {
+                        //ignore
+                    }
+                }
+            });
+            mExpireDateCheckThread.start();
+        } catch (RemoteConnectionException e) {
+            //ignore
+        }
+    }
     private void disConnectPreviousConnection() throws RemoteConnectionException, IOException {
         if (mRemoteConnection != null){
             if (mRemoteConnection.isPortInUse(mLocalPort)){
@@ -325,9 +358,9 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
         if (getProxy() instanceof SSHProxy){
             ((SSHProxy) getProxy()).getSSHConfig().cancel();
         }
-        if (mParcelFileDescriptor != null){
-            mParcelFileDescriptor.close();
-            mParcelFileDescriptor = null;
+        if (mFileDescriptor != null){
+            mFileDescriptor.close();
+            mFileDescriptor = null;
 
         }
     }
@@ -386,8 +419,15 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
 
 
     @Override
-    public Socket getMainSocket() {
-        return mRemoteConnection.getMainSocket();
+    public int getMainSocketDescriptor() {
+
+        if (mRemoteConnection == null){
+            return -1;
+        }
+        if (getProxy() instanceof SSHProxy){
+            return ((SSHProxy) getProxy()).getSSHConfig().getMainSocketDescriptor();
+        }
+        return mRemoteConnection.getMainSocketDescriptor();
     }
 
     @Override
@@ -414,11 +454,16 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
         if (mState != State.WAITING_FOR_NETWORK){
             mState = State.DISCONNECTED;
         }
-        stopOldOpenVPNProcess();
         try {
             disConnectPreviousConnection();
         } catch (Exception ignore) {
 
+        }
+        stopOldOpenVPNProcess();
+        mOpenVPNThread = null;
+        if (mExpireDateCheckThread != null && !mExpireDateCheckThread.isInterrupted()){
+            mExpireDateCheckThread.interrupt();
+            mExpireDateCheckThread = null;
         }
     }
 
@@ -768,8 +813,8 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
 
     @Override
     public ParcelFileDescriptor getFileDescriptor() {
-        mParcelFileDescriptor = openTun();
-       return mParcelFileDescriptor;
+        mFileDescriptor = openTun();
+       return mFileDescriptor;
     }
     public ParcelFileDescriptor openTun(){
         VpnService.Builder builder = mVpnService.getBuilder();
@@ -901,7 +946,7 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
         if (!TextUtils.isEmpty(DNS2)) {
             builder.addDnsServer(DNS2);
         }
-        builder.addDnsServer("8.8.8.8");
+//        builder.addDnsServer("8.8.8.8");
 
         mLastTunCfg = getTunConfigString();
         // Reset information
@@ -1005,7 +1050,7 @@ public class OpenVpnConfig extends Config implements IOpenVPNServiceInternal {
 
     public void onOpenVpnReconnecting() {
         Logger.logInfo("OpenVPN engine told us it is reconnecting ");
-        if(mRemoteConnection.isConnected()) {
+        if(mRemoteConnection != null && mRemoteConnection.isConnected()) {
            guiHandler.post(()->{
                mVpnService.onReconnecting();
            });

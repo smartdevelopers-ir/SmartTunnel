@@ -4,20 +4,16 @@ import android.app.Application;
 import android.os.Build;
 import android.os.StrictMode;
 import android.os.strictmode.Violation;
-import android.support.multidex.BuildConfig;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationChannelCompat;
 import androidx.core.app.NotificationManagerCompat;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.security.Security;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashSet;
@@ -29,16 +25,23 @@ import ir.smartdevelopers.smarttunnel.utils.Logger;
 
 public class SmartTunnelApp extends Application {
     public static int mStatusBarHeight = 0;
+    private  Thread.UncaughtExceptionHandler androidDefaultExceptionHandler ;
     private final String[] defaultSelectedApps = {
             "com.android.vending",
             "com.google.android.gms",
+            "org.telegram.messenger",
+            "com.whatsapp",
+            "com.instagram.android",
     };
+    static {
+        Security.insertProviderAt(new org.spongycastle.jce.provider.BouncyCastleProvider(), 1);
+    }
     @Override
     public void onCreate() {
-
-        if (BuildConfig.BUILD_TYPE.equals("debug")) {
-            enableStrictModes();
-        }
+        androidDefaultExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
+//        if (BuildConfig.BUILD_TYPE.equals("debug")) {
+//            enableStrictModes();
+//        }
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(@NonNull Thread t, @NonNull Throwable e) {
@@ -53,6 +56,8 @@ public class SmartTunnelApp extends Application {
 
                 } catch (Exception ex) {
                     //ignore
+                }finally {
+                    androidDefaultExceptionHandler.uncaughtException(t,e);
                 }
             }
         });
@@ -75,8 +80,11 @@ public class SmartTunnelApp extends Application {
                 .Builder(MyVpnService.NOTIFICATION_CHANNEL_BG_ID, NotificationManagerCompat.IMPORTANCE_DEFAULT);
         NotificationChannelCompat channelCompat = channelBuilder.setName(getString(R.string.notification_bg_name))
                 .setDescription(getString(R.string.notification_bg_description))
+                .setSound(null,null)
+                .setVibrationEnabled(false)
                 .build();
         NotificationManagerCompat managerCompat = NotificationManagerCompat.from(getApplicationContext());
+        managerCompat.deleteNotificationChannel(MyVpnService.NOTIFICATION_CHANNEL_BG_ID_OLD);
         managerCompat.createNotificationChannel(channelCompat);
     }
     private void enableStrictModes() {

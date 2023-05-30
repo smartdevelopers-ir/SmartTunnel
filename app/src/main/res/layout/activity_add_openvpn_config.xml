@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     tools:context=".ui.activities.AddOpenVpnConfigActivity">
 <com.google.android.material.appbar.AppBarLayout
     android:id="@+id/appbar"
@@ -20,8 +21,8 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="@string/add_ssh_config_title"
-            android:textAppearance="@style/TextAppearance.AppCompat.Title"
+            android:text="@string/add_openvpn_config_title"
+            android:textAppearance="@style/TitleTextAppearance"
             android:layout_gravity="center_vertical"
             android:layout_marginStart="16dp"
             />
@@ -62,12 +63,12 @@
        >
        <com.google.android.material.tabs.TabItem
            android:layout_width="wrap_content"
-           android:layout_height="wrap_content"
+           android:layout_height="match_parent"
            android:text="@string/ssh_settings"
            />
        <com.google.android.material.tabs.TabItem
            android:layout_width="wrap_content"
-           android:layout_height="wrap_content"
+           android:layout_height="match_parent"
            android:text="@string/open_vpn_profile"
            />
    </com.google.android.material.tabs.TabLayout>

@@ -100,8 +100,7 @@ public class DNSChannel extends Channel {
             return;
         }
         try {
-            mChannel = mRemoteConnection.startDirectTCPChannel("127.0.0.1",0,
-                    mInitialPacket.getIPHeader().getDestAddressName(),
+            mChannel = mRemoteConnection.startDirectTCPChannel(mInitialPacket.getIPHeader().getDestAddressName(),
                     mInitialPacket.getTransmissionProtocol().getDestPortIntValue());
             mRemoteOut = mChannel.getRemoteOut();
             mRemoteIn = mChannel.getRemoteIn();

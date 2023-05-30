@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import ir.smartdevelopers.smarttunnel.BuildConfig;
 import ir.smartdevelopers.smarttunnel.R;
 import ir.smartdevelopers.smarttunnel.ui.models.ConfigListModel;
 import ir.smartdevelopers.smarttunnel.ui.models.LogItem;
@@ -250,5 +251,32 @@ public class PrefsUtil {
     public static void setPreferIpv6(Context context,boolean prefer){
          PreferenceManager.getDefaultSharedPreferences(context)
                 .edit().putBoolean(context.getString(R.string.key_prefer_ipv6),false).apply();
+    }
+    public static void setUpdateVersionCode(Context context,int versionCode){
+        getGeneralPrefs(context).edit().putInt("update_version_code",versionCode).apply();
+    }
+    public static int getUpdateVersionCode(Context context){
+        return getGeneralPrefs(context).getInt("update_version_code", BuildConfig.VERSION_CODE);
+    }
+    public static void setUpdateUrl(Context context,String url){
+        getGeneralPrefs(context).edit().putString("update_url",url).apply();
+    }
+    public static void setDownloadedApkId(Context context,String downloadedUri,long downloadedId){
+        getGeneralPrefs(context).edit().putLong(downloadedUri,downloadedId).apply();
+    }
+    public static void deleteDownloadedApkId(Context context,String downloadedUri){
+        getGeneralPrefs(context).edit().remove(downloadedUri).apply();
+    }
+    public static long getDownloadedApkId(Context context,String downloadedUri){
+        return getGeneralPrefs(context).getLong(downloadedUri,-1);
+    }
+    public static String getUpdateUrl(Context context){
+        return getGeneralPrefs(context).getString("update_url", null);
+    }
+    public static String getLastNoteExported(Context context){
+        return getGeneralPrefs(context).getString("last_note_exported","");
+    }
+    public static void setLastNoteExported(Context context,String lastNote){
+         getGeneralPrefs(context).edit().putString("last_note_exported",lastNote).apply();
     }
 }

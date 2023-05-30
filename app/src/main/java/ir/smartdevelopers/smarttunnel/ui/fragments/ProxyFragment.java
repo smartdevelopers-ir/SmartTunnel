@@ -22,6 +22,7 @@ import ir.smartdevelopers.smarttunnel.ui.interfaces.Savable;
 import ir.smartdevelopers.smarttunnel.ui.models.HttpProxy;
 import ir.smartdevelopers.smarttunnel.ui.models.ProxyType;
 import ir.smartdevelopers.smarttunnel.ui.models.SSHConfig;
+import ir.smartdevelopers.smarttunnel.ui.models.SSHProxy;
 import ir.smartdevelopers.smarttunnel.ui.utils.PrefsUtil;
 import ir.smartdevelopers.smarttunnel.ui.utils.SSHConfigViewUtil;
 
@@ -80,8 +81,9 @@ public class ProxyFragment extends Fragment implements Savable {
             mBinding.radSsh.jumpDrawablesToCurrentState();
             String proxyJson = PrefsUtil.loadGlobalProxy(requireContext());
             if (!TextUtils.isEmpty(proxyJson)){
-                SSHConfig sshProxy = new Gson().fromJson(proxyJson,SSHConfig.class);
-                mSshConfigBuilder = sshProxy.toBuilder();
+                SSHProxy sshProxy = new Gson().fromJson(proxyJson,SSHProxy.class);
+
+                mSshConfigBuilder = sshProxy.getSSHConfig().toBuilder();
                 loadSshProxyLayout(mSshConfigBuilder);
             }
         }
@@ -151,8 +153,9 @@ public class ProxyFragment extends Fragment implements Savable {
         }else if (mBinding.radSsh.isChecked()){
             if (!configViewUtil.showErrors(true)){
                 SSHConfig config = mSshConfigBuilder.build();
+                SSHProxy proxy = new SSHProxy(config);
                 PrefsUtil.setGlobalProxyType(requireContext(),ProxyType.TYPE_SSH);
-                PrefsUtil.saveGlobalProxy(requireContext(),new Gson().toJson(config));
+                PrefsUtil.saveGlobalProxy(requireContext(),new Gson().toJson(proxy));
             }else {
                 return;
             }

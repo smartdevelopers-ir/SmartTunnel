@@ -22,8 +22,10 @@ import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
-import java.util.Objects;
+import java.util.List;
 import java.util.Vector;
+
+import ir.smartdevelopers.smarttunnel.ui.utils.Util;
 
 public class NetworkUtils {
 
@@ -103,12 +105,15 @@ public class NetworkUtils {
         return info.isConnected();
     }
     public static boolean isIPv6Enabled(){
+
         try {
             InetAddress[] addresses = InetAddress.getAllByName("google.com");
             if (addresses != null){
                 for (InetAddress add : addresses){
                     if (add instanceof Inet6Address){
-                        return true;
+                        if (add.isReachable(100)){
+                            return true;
+                        }
                     }
                 }
             }
@@ -116,5 +121,30 @@ public class NetworkUtils {
             //ignore
         }
         return false;
+    }
+
+    private static NetworkInterface findActiveInterface() {
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()){
+                NetworkInterface ni = interfaces.nextElement();
+                if (Util.contains(ni.getDisplayName(),"lo") ||
+                        Util.contains(ni.getDisplayName(),"p2p") ||
+                        Util.contains(ni.getDisplayName(),"dummy") ||
+                        Util.contains(ni.getDisplayName(),"sit")
+                ){
+                    continue;
+                }
+                List<InterfaceAddress> interfaceAddresses = ni.getInterfaceAddresses();
+                if ( interfaceAddresses == null || interfaceAddresses.size()==0){
+                    continue;
+                }
+
+
+            }
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

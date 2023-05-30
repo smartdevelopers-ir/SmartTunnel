@@ -1,4 +1,4 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources>
     <!-- Base application theme. -->
     <style name="Theme.SmartTunnel" parent="Theme.MaterialComponents.Light.NoActionBar">
         <!-- Primary brand color. -->
@@ -30,6 +30,16 @@
         <item name="alertDialogTheme">@style/AlertDialogStyle</item>
         <item name="android:alertDialogTheme">@style/AlertDialogStyle</item>
         <item name="materialAlertDialogTheme">@style/AlertDialogStyle</item>
+        <item name="bottomSheetDialogTheme">@style/BottomSheetStyle</item>
+
+
+    </style>
+
+    <style name="Theme.SmartTunnel.PopupMenuTheme">
+        <item name="android:textColorPrimary">@color/colorPrimary</item>
+        <item name="android:textColor">@color/colorPrimary</item>
+        <item name="android:colorControlHighlight">@color/colorPrimary</item>
+
     </style>
 
     <style name="AlertDialogStyle" parent="Theme.MaterialComponents.Light.Dialog.Alert">
@@ -42,9 +52,12 @@
         <item name="android:background">@color/colorToolbar</item>
         <item name="titleTextColor">@color/white</item>
         <item name="colorOnPrimary">@color/white</item>
-
+        <item name="titleTextAppearance">@style/TitleTextAppearance</item>
+        <item name="actionMenuTextColor">@color/white</item>
     </style>
-
+<style name="TitleTextAppearance" parent="TextAppearance.AppCompat.Title">
+    <item name="android:textSize">16sp</item>
+</style>
     <style name="TextAppearanceListItem">
         <item name="android:textColor">@color/colorError</item>
     </style>
@@ -68,7 +81,7 @@
     <style name="TabStyle" parent="Widget.MaterialComponents.TabLayout.Colored">
         <item name="android:background">@color/colorToolbar</item>
         <item name="tabTextColor">@color/color_tab_text</item>
-        <item name="android:minHeight">?attr/actionBarSize</item>
+<!--        <item name="android:minHeight">?attr/actionBarSize</item>-->
     </style>
     <style name="CheckBoxStyle" parent="Widget.MaterialComponents.CompoundButton.CheckBox">
         <item name="android:textColor">@color/color_primary_text</item>
@@ -113,5 +126,8 @@
     <style name="ShapeAppearanceRound25" parent="ShapeAppearance.MaterialComponents.MediumComponent">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">8dp</item>
+    </style>
+    <style name="BottomSheetStyle" parent="Theme.Design.BottomSheetDialog">
+        <item name="android:windowTranslucentStatus">true</item>
     </style>
 </resources>

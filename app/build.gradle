@@ -4,6 +4,20 @@ plugins {
 
 android {
 
+    signingConfigs {
+        debug {
+            storeFile file('D:\\Projrcts\\FakeSMS\\smart_tunel.jks')
+            storePassword 'mosi.1371'
+            keyPassword 'mosi.1371'
+            keyAlias 'original'
+        }
+        release {
+            storeFile file('D:\\Projrcts\\FakeSMS\\smart_tunel.jks')
+            storePassword 'mosi.1371'
+            keyAlias 'original'
+            keyPassword 'mosi.1371'
+        }
+    }
     namespace 'ir.smartdevelopers.smarttunnel'
     compileSdk 33
 
@@ -11,13 +25,14 @@ android {
         applicationId "ir.smartdevelopers.smarttunnel"
         minSdk 21
         targetSdk 33
-        versionCode 1
-        versionName "1.0.1"
+        versionCode 10
+        versionName "1.1.5"
         dimension = "implementation"
-        buildConfigField("boolean", "openvpn3", "true")
+        buildConfigField("boolean", "openvpn3", "false")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
         setProperty("archivesBaseName", "SmartTunnel-$versionName")
+
     }
     buildFeatures {
         aidl = true
@@ -25,7 +40,12 @@ android {
     buildTypes {
         release {
             minifyEnabled false
+            shrinkResources = false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+        debug {
+            signingConfig signingConfigs.debug
         }
     }
     compileOptions {
@@ -36,6 +56,10 @@ android {
         viewBinding true
     }
     packagingOptions.resources.excludes.add("META-INF/DEPENDENCIES")
+    packagingOptions{
+        jniLibs.useLegacyPackaging = true
+        jniLibs.keepDebugSymbols.add("**/*tun2socks.so")
+    }
     externalNativeBuild {
         cmake {
             path "src/main/cpp/CMakeLists.txt"
@@ -46,9 +70,15 @@ android {
     sourceSets {
         main{
             assets.setSrcDirs(["src/main/assets", "build/ovpnassets"])
+            jniLibs.srcDirs = ['libs']
         }
     }
-
+//    tasks.withType(Copy) {
+//        if (name.startsWith('merge')) {
+//            from('build/tun2socks')
+//            into('src/main/libs')
+//        }
+//    }
 }
 
 dependencies {
@@ -56,66 +86,30 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.preference:preference:1.2.0'
     implementation 'androidx.documentfile:documentfile:1.0.1'
-    implementation 'com.google.android.material:material:1.8.0'
+    implementation 'com.google.android.material:material:1.9.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.work:work-runtime:2.8.1'
-    implementation 'com.android.support:multidex:1.0.3'
-    implementation files('libs/tun2socks.aar')
+    implementation 'androidx.multidex:multidex:2.0.1'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 //    implementation 'com.jcraft:jsch:0.1.55'
+    // dns java higher version need java 8+
     implementation 'dnsjava:dnsjava:2.1.9'
     implementation 'commons-codec:commons-codec:1.15'
-    implementation 'com.google.code.gson:gson:2.8.6'
-// https://mvnrepository.com/artifact/org.slf4j/slf4j-api
-    implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.7'
-// https://mvnrepository.com/artifact/com.sshtools/maverick-synergy-client
-    implementation group: 'com.sshtools', name: 'maverick-synergy-client', version: '3.0.10'
-// https://mvnrepository.com/artifact/com.hierynomus/sshj
-    implementation ('com.hierynomus:sshj:0.35.0'){
-        exclude group: 'com.jcraft', module: 'jzlib'
-    }
+    implementation 'com.google.code.gson:gson:2.10.1'
 
     implementation 'com.madgag.spongycastle:core:1.58.0.0'
+    // https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk18on
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.73'
+
 // https://mvnrepository.com/artifact/com.madgag.spongycastle/prov
     implementation 'com.madgag.spongycastle:prov:1.58.0.0'
+    implementation 'com.madgag.spongycastle:pg:1.54.0.0'
+    implementation 'com.madgag.spongycastle:pkix:1.54.0.0'
 
 
 }
 
 
-// Workaround for macOS(arm64) and macOS(intel) since it otherwise does not find swig and
-// I cannot get the Exec task to respect the PATH environment :(
-//if (new File("/opt/homebrew/bin/swig").exists()) {
-//    swigcmd = "/opt/homebrew/bin/swig";
-//} else if (new File("/usr/local/bin/swig").exists()) {
-//    swigcmd = "/usr/local/bin/swig";
-//}
-//
-//public File registerGenTask(String variantName, String variantDirName) {
-//    String swigcmd = "swig";
-//    File baseDir = new File(getBuildDir(), "generated/source/ovpn3swig/" + variantDirName);
-//    File genDir = new File(baseDir, "net/openvpn/ovpn3");
-//
-//    TaskProvider<Exec> generateOpenVPN3SwigTask = getTasks().register("generateOpenVPN3Swig" + variantName, Exec.class, task -> {
-//        task.doFirst(t -> {
-//            mkdir(genDir);
-//        });
-//        task.commandLine(swigcmd, "-outdir", genDir.getAbsolutePath(), "-outcurrentdir", "-c++", "-java", "-package", "net.openvpn.ovpn3",
-//                "-Isrc/main/cpp/openvpn3/client", "-Isrc/main/cpp/openvpn3/",
-//                "-DOPENVPN_PLATFORM_ANDROID",
-//                "-o", genDir.getAbsolutePath() + "/ovpncli_wrap.cxx", "-oh", genDir.getAbsolutePath() + "/ovpncli_wrap.h",
-//                "src/main/cpp/openvpn3/client/ovpncli.i");
-//        task.getInputs().files("src/main/cpp/openvpn3/client/ovpncli.i");
-//        task.getOutputs().dir(genDir);
-//    });
-//
-//    return baseDir;
-//}
-//
-//android.getApplicationVariants().all(variant -> {
-//    File sourceDir = registerGenTask(variant.getName(), variant.getBaseName().replace("-", "/"));
-//    TaskProvider<Exec> generateOpenVPN3SwigTask = getTasks().named("generateOpenVPN3Swig" + variant.getName(), Exec.class);
-//    variant.registerJavaGeneratingTask(generateOpenVPN3SwigTask.get(), sourceDir);
-//});
+

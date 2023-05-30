@@ -2,10 +2,6 @@ package ir.smartdevelopers.smarttunnel.ui.models;
 
 import android.os.ParcelFileDescriptor;
 
-import com.google.gson.Gson;
-
-import java.net.Socket;
-
 import ir.smartdevelopers.smarttunnel.MyVpnService;
 import ir.smartdevelopers.smarttunnel.ui.exceptions.ConfigException;
 
@@ -40,7 +36,7 @@ public abstract class Config {
         CONNECTED,DISCONNECTED,DISCONNECTING,CONNECTING,RECONNECTING,WAITING_FOR_NETWORK
     }
     public abstract void connect() throws ConfigException;
-    public abstract Socket getMainSocket();
+    public abstract int getMainSocketDescriptor();
 
     public String getName() {
         return mName;

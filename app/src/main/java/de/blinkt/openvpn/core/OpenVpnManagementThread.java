@@ -110,7 +110,7 @@ public class OpenVpnManagementThread implements Runnable, OpenVPNManagement {
     public OpenVpnManagementThread(OpenVpnConfig config,Context context) {
         mProfile = config.getProfile();
         mWeakContext = new WeakReference<>(context);
-        mResumeHandler = new Handler(Looper.getMainLooper());
+        mResumeHandler = new Handler();
         mOpenVpnConfig = config;
 
     }

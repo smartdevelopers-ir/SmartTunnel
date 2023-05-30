@@ -1,5 +1,10 @@
 package ir.smartdevelopers.smarttunnel.ui.activities;
 
+import android.Manifest;
+import android.content.Intent;
+import android.os.Bundle;
+import android.text.TextUtils;
+
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -8,16 +13,10 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 
-import android.Manifest;
-import android.content.Intent;
-import android.os.Bundle;
-import android.text.TextUtils;
-
 import com.google.android.material.tabs.TabLayout;
 import com.google.gson.Gson;
 
 import java.io.IOException;
-import java.util.UUID;
 
 import ir.smartdevelopers.smarttunnel.R;
 import ir.smartdevelopers.smarttunnel.databinding.ActivityAddSshconfigBinding;
@@ -28,7 +27,6 @@ import ir.smartdevelopers.smarttunnel.ui.models.ConfigListModel;
 import ir.smartdevelopers.smarttunnel.ui.models.SSHConfig;
 import ir.smartdevelopers.smarttunnel.ui.models.SSHProxy;
 import ir.smartdevelopers.smarttunnel.ui.utils.ConfigsUtil;
-import ir.smartdevelopers.smarttunnel.ui.utils.Util;
 import ir.smartdevelopers.smarttunnel.ui.viewModels.AddSSHConfigViewModel;
 import ir.smartdevelopers.smarttunnel.ui.viewModels.SshConfigVieModel;
 import ir.smartdevelopers.smarttunnel.utils.Logger;
@@ -66,7 +64,7 @@ public class AddSSHConfigActivity extends AppCompatActivity {
     }
 
     private void initViews() {
-        Util.setStatusBarPaddingToView(mBinding.appbar);
+//        Util.setStatusBarPaddingToView(mBinding.appbar);
         mBinding.btnSave.setOnClickListener(v -> {
             saveConfig();
         });
@@ -118,7 +116,7 @@ public class AddSSHConfigActivity extends AppCompatActivity {
     private void showAdvancedSSHSettingsFragment(boolean animate,Bundle data) {
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         if (animate) {
-            transaction.setCustomAnimations(R.anim.fragment_slide_left_to_right_enter, R.anim.fragment_slide_left_to_right_exit);
+            transaction.setCustomAnimations(R.anim.fragment_slide_right_to_left_enter, R.anim.fragment_slide_right_to_left_exit);
         }
        transaction.replace(R.id.sshConfigFragmentContainer, AdvancedSSHConfigFragment.class,data)
                 .commit();
@@ -139,7 +137,8 @@ public class AddSSHConfigActivity extends AppCompatActivity {
             getSupportFragmentManager().beginTransaction()
                     .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
                     .addToBackStack("export_config")
-                    .add(android.R.id.content,ExportSshConfigDialog.getInstance())
+                    .add(android.R.id.content,
+                            ExportSshConfigDialog.getInstance(mSshConfigVieModel.getSSHConfigBuilder().getName()))
                     .commit();
         }
     }

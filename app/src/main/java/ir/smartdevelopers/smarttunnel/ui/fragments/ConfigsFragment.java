@@ -1,11 +1,14 @@
 package ir.smartdevelopers.smarttunnel.ui.fragments;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Looper;
 import android.util.Pair;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
@@ -17,6 +20,8 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.view.ContextThemeWrapper;
+import androidx.appcompat.widget.PopupMenu;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -47,7 +52,7 @@ import ir.smartdevelopers.smarttunnel.ui.utils.ConfigsUtil;
 import ir.smartdevelopers.smarttunnel.ui.utils.PrefsUtil;
 import ir.smartdevelopers.smarttunnel.ui.utils.Util;
 
-public class ConfigsFragment extends Fragment {
+public class ConfigsFragment extends Fragment implements ConfigMoreBottomSheet.OnConvertClickListener{
 
     public static final String KEY_CONFIG_URI ="config_uri";
     private FragmentConfigsBinding mBinding;
@@ -55,6 +60,7 @@ public class ConfigsFragment extends Fragment {
     private List<ConfigListModel> mConfigListModels;
     private OnListItemClickListener<ConfigListModel> mOnDeleteClickListener;
     private OnListItemClickListener<ConfigListModel> mOnEditClickListener;
+    private OnListItemClickListener<ConfigListModel> mOnLongClickListener;
     private ConfigListAdapter.OnConfigChangeListener mOnConfigChangeListener;
     private Snackbar undoSnackBar;
     private ConfigListModel mLastDeletedConfig;
@@ -115,6 +121,7 @@ public class ConfigsFragment extends Fragment {
         mAdapter.setOnConfigChangeListener(mOnConfigChangeListener);
         mAdapter.setOnDeleteClickListener(mOnDeleteClickListener);
         mAdapter.setOnEditClickListener(mOnEditClickListener);
+        mAdapter.setOnLongClickListener(mOnLongClickListener);
         mBinding.configsRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         mBinding.configsRecyclerView.addItemDecoration(new DividerItemDecoration(requireContext(),DividerItemDecoration.VERTICAL));
         mBinding.configsRecyclerView.setAdapter(mAdapter);
@@ -152,8 +159,19 @@ public class ConfigsFragment extends Fragment {
                 PrefsUtil.setSelectedConfig(requireContext(),model);
             }
         };
+        mOnLongClickListener = new OnListItemClickListener<ConfigListModel>() {
+            @Override
+            public void onItemClicked(View view, ConfigListModel configListModel, int position) {
+                if (!Objects.equals(configListModel.type, SSHConfig.CONFIG_TYPE)){
+                    openConvertDialog(configListModel);
+                }
+            }
+        };
     }
 
+    private void openConvertDialog(ConfigListModel configListModel) {
+        ConfigMoreBottomSheet.getInstance(configListModel).showDialog(getChildFragmentManager());
+    }
 
 
     private void openEditConfigActivity(ConfigListModel model, int position) {
@@ -190,7 +208,7 @@ public class ConfigsFragment extends Fragment {
         });
         mBinding.toolbar.setOnMenuItemClickListener(item -> {
             if (item.getItemId() == R.id.action_add){
-                openAddConfigActivity(OpenVpnConfig.CONFIG_TYPE);
+                showAddConfigMenu();
             } else if (item.getItemId() == R.id.action_import) {
                 openImportActivity();
             }
@@ -201,6 +219,32 @@ public class ConfigsFragment extends Fragment {
         }else {
             mBinding.txtNoConfigMessage.setVisibility(View.GONE);
         }
+    }
+
+    private void showAddConfigMenu() {
+        View addItemView = mBinding.toolbar.findViewById(R.id.action_add);
+        if (addItemView == null ){
+            return;
+        }
+
+        Context wrapper = new ContextThemeWrapper(requireContext(),R.style.Theme_SmartTunnel_PopupMenuTheme);
+        PopupMenu popupMenu = new PopupMenu(wrapper,addItemView);
+        popupMenu.getMenu().add(0,R.id.action_open_vpn_over_ssh,0,R.string.open_vpn_over_ssh);
+        popupMenu.getMenu().add(0,R.id.action_ssh_tunnel,0,R.string.ssh_tunnel);
+        popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                if (item.getItemId() == R.id.action_open_vpn_over_ssh){
+                    openAddConfigActivity(OpenVpnConfig.CONFIG_TYPE);
+                }else if (item.getItemId() == R.id.action_ssh_tunnel){
+                    openAddConfigActivity(SSHConfig.CONFIG_TYPE);
+                }
+                return true;
+            }
+        });
+
+        popupMenu.show();
+
     }
 
     private void openImportActivity() {
@@ -268,6 +312,22 @@ public class ConfigsFragment extends Fragment {
     }
 
 
+    private SSHConfig convertToSsh(OpenVpnConfig config){
+        SSHConfig.Builder builder = new SSHConfig.Builder(config.getName(),
+                SSHConfig.MODE_MAIN_CONNECTION,config.getServerAddress(),config.getServerPort(),
+                config.getUsername(),config.getPassword());
+        builder.setPreferIPv6(config.isPreferIPv6())
+                .setPrivateKeyLocked(config.isPrivateKeyLocked())
+                .setPrivateKey(config.getPrivateKey())
+                .setPasswordLocked(config.isPasswordLocked())
+                .setUsernameLocked(config.isUsernameLocked())
+                .setServerAddressLocked(config.isServerAddressLocked())
+                .setServerPortLocked(config.isServerPortLocked())
+                .setUDPGWPort(7300)
+                .setConnectionType(SSHConfig.CONNECTION_TYPE_DIRECT)
+                .setUsePrivateKey(config.isUsePrivateKey());
+        return builder.build();
+    }
     private void addConfigListModel(ConfigListModel model, Integer configPosition){
         if (mAdapter != null){
             if (mAdapter.getItemCount() == 0){
@@ -296,5 +356,45 @@ public class ConfigsFragment extends Fragment {
         }
         intent.putExtra(AddSSHConfigActivity.KEY_MODE,AddSSHConfigActivity.MODE_ADD);
         mAddConfigLauncher.launch(intent);
+    }
+    private Looper mLooper = Looper.myLooper();
+    @Override
+    public void onConvertClicked(ConfigListModel model) {
+
+        AlertDialog loading = AlertUtil.showLoadingDialog(ConfigsFragment.this.requireActivity());
+
+        if (Objects.equals(model.type, OpenVpnConfig.CONFIG_TYPE)){
+            Util.SINGLE_EXECUTOR_SERVICE.execute(()->{
+                try {
+                    OpenVpnConfig openVpnConfig = (OpenVpnConfig) ConfigsUtil.loadConfig(requireContext(),model.configId,OpenVpnConfig.CONFIG_TYPE);
+                    if (openVpnConfig != null){
+                        SSHConfig sshConfig = convertToSsh(openVpnConfig);
+                        ConfigListModel sshListModel = new ConfigListModel(sshConfig.getName(),
+                                sshConfig.getId(),false,SSHConfig.CONFIG_TYPE);
+                        try {
+                            ConfigsUtil.saveConfig(requireContext(),sshConfig);
+
+                            Util.MAIN_HANDLER.post(()-> {
+                                addConfigListModel(sshListModel,null);
+                                loading.dismiss();
+                                AlertUtil.showToast(requireContext(),
+                                        R.string.config_converted_successfully, Toast.LENGTH_SHORT, AlertUtil.Type.SUCCESS);
+                            });
+
+                        } catch (IOException e) {
+                            Util.MAIN_HANDLER.post(()->{
+                                loading.dismiss();
+                                AlertUtil.showToast(requireContext(), R.string.error_converting_config, Toast.LENGTH_SHORT, AlertUtil.Type.ERROR);
+                            });
+                        }
+                    }
+                } catch (IOException e) {
+                    Util.MAIN_HANDLER.post(()->{
+                        loading.dismiss();
+                        AlertUtil.showToast(requireContext(),R.string.can_not_convert_config,Toast.LENGTH_SHORT, AlertUtil.Type.ERROR);
+                    });
+                }
+            });
+        }
     }
 }

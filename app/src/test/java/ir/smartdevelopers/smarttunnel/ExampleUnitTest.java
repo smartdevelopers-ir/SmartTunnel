@@ -1,20 +1,16 @@
 package ir.smartdevelopers.smarttunnel;
 
-import org.apache.commons.codec.binary.Base32;
-import org.apache.commons.codec.binary.BinaryCodec;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.codec.digest.DigestUtils;
-import org.junit.Test;
-import org.junit.function.ThrowingRunnable;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 import android.os.ParcelFileDescriptor;
 
 import androidx.annotation.NonNull;
 
 import com.google.gson.Gson;
-import com.google.gson.InstanceCreator;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -22,9 +18,16 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.annotations.JsonAdapter;
 
+import org.apache.commons.codec.binary.Base32;
+import org.apache.commons.codec.binary.BinaryCodec;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.junit.Test;
+import org.xbill.DNS.Message;
+
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.math.BigInteger;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -33,19 +36,17 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 
-
-import ir.smartdevelopers.smarttunnel.packet.TCPPacketQueue;
 import ir.smartdevelopers.smarttunnel.packet.IPV4Header;
 import ir.smartdevelopers.smarttunnel.packet.Packet;
 import ir.smartdevelopers.smarttunnel.packet.PacketV4;
 import ir.smartdevelopers.smarttunnel.packet.TCP;
 import ir.smartdevelopers.smarttunnel.packet.TCPFlag;
 import ir.smartdevelopers.smarttunnel.packet.TCPOption;
+import ir.smartdevelopers.smarttunnel.packet.TCPPacketQueue;
 import ir.smartdevelopers.smarttunnel.packet.TCPPacketWrapper;
 import ir.smartdevelopers.smarttunnel.ui.exceptions.ConfigException;
 import ir.smartdevelopers.smarttunnel.ui.exceptions.ConfigNotSupportException;
 import ir.smartdevelopers.smarttunnel.ui.models.Config;
-import ir.smartdevelopers.smarttunnel.ui.models.Tun2SocksConfig;
 import ir.smartdevelopers.smarttunnel.ui.utils.Util;
 import ir.smartdevelopers.smarttunnel.utils.ByteUtil;
 
@@ -355,8 +356,8 @@ public class ExampleUnitTest {
         }
 
         @Override
-        public Socket getMainSocket() {
-            return null;
+        public int getMainSocketDescriptor() {
+            return -1;
         }
 
         @Override
@@ -419,4 +420,33 @@ public class ExampleUnitTest {
         return bytes;
     }
 
+    @Test
+    public void semaphoreTest(){
+        Semaphore semaphore = new Semaphore(0);
+        int[] count = {0};
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    semaphore.acquire();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }).start();
+    }
+    @Test
+    public void dnsParseTest(){
+        byte[] responseData = {66, -114, -127, -128, 0, 1, 0, 1, 0, 0, 0, 0, 3, 119, 119, 119, 6, 103, 111, 111, 103, 108, 101, 3, 99, 111, 109, 0, 0, 1, 0, 1, -64, 12, 0, 1, 0, 1, 0, 0, 1, 35, 0, 4, -114, -5};
+        try {
+            Message msg = new Message(responseData);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    @Test
+    public void dnsResolverTest(){
+        Random random = new Random();
+        int r = random.nextInt(1);
+    }
 }

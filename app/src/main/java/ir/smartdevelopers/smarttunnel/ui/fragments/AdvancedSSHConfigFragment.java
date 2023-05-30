@@ -55,6 +55,49 @@ public class AdvancedSSHConfigFragment extends Fragment {
                         .setPrivateKeyLocked(true);
             }
         }
+        mBinding.chbUseRemoteSocksServer.setOnClickListener(v->{
+            mSshConfigVieModel.getSSHConfigBuilder().setUseRemoteSocksServer(mBinding.chbUseRemoteSocksServer.isChecked());
+            if (mBinding.chbUseRemoteSocksServer.isChecked()){
+                mBinding.remoteSocksServerContainer.setVisibility(View.VISIBLE);
+            }else {
+                mBinding.remoteSocksServerContainer.setVisibility(View.GONE);
+            }
+        });
+        if (mSshConfigVieModel.getSSHConfigBuilder().isUseRemoteSocksServer()){
+            mBinding.chbUseRemoteSocksServer.setChecked(true);
+            mBinding.remoteSocksServerContainer.setVisibility(View.VISIBLE);
+            mBinding.edtRemoteSocksAddress.setText(mSshConfigVieModel.getSSHConfigBuilder().getRemoteSocksAddress());
+            mBinding.edtRemoteSocksPort.setText(String.valueOf(mSshConfigVieModel.getSSHConfigBuilder().getRemoteSocksPort()));
+        }else {
+            mBinding.chbUseRemoteSocksServer.setChecked(false);
+            mBinding.remoteSocksServerContainer.setVisibility(View.GONE);
+        }
+        mBinding.edtRemoteSocksAddress.addTextChangedListener(new SimpleTextWatcher(mBinding.edtRemoteSocksAddress,mBinding.edtRemoteSocksAddressLayout) {
+            @Override
+            public void onTextChanged(CharSequence text) {
+                if (text == null){
+                    text = "";
+                }
+                mSshConfigVieModel.getSSHConfigBuilder().setRemoteSocksAddress(text.toString());
+            }
+        });
+        mBinding.edtRemoteSocksPort.addTextChangedListener(new SimpleTextWatcher(mBinding.edtRemoteSocksPort,mBinding.edtRemoteSocksPortLayout) {
+            @Override
+            public void onTextChanged(CharSequence text) {
+
+                if (!TextUtils.isEmpty(text)){
+                    mSshConfigVieModel.getSSHConfigBuilder().setRemoteSocksPort(Integer.parseInt(text.toString()));
+                }else {
+                    mSshConfigVieModel.getSSHConfigBuilder().setRemoteSocksPort(0);
+                }
+            }
+        });
+
+        String udpgwPort = "7300";
+        if (mSshConfigVieModel.getSSHConfigBuilder().getUDPGWPort() > 0){
+            udpgwPort = String.valueOf(mSshConfigVieModel.getSSHConfigBuilder().getUDPGWPort());
+        }
+        mBinding.edtUDPGWPort.setText(udpgwPort);
         mBinding.edtUDPGWPort.addTextChangedListener(new SimpleTextWatcher( mBinding.edtUDPGWPort, mBinding.edtUDPGWPortLayout) {
             @Override
             public void onTextChanged(CharSequence text) {
@@ -115,6 +158,7 @@ public class AdvancedSSHConfigFragment extends Fragment {
         mSshConfigVieModel.getSSHConfigBuilder().setPayload(null);
         mSshConfigVieModel.getSSHConfigBuilder().setConnectionType(SSHConfig.CONNECTION_TYPE_DIRECT);
         mSshConfigVieModel.getSSHConfigBuilder().setServerNameIndicator(null);
+        mSshConfigVieModel.getSSHConfigBuilder().setJumper(null);
     }
 
     public void showErrors(){
