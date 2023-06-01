@@ -112,6 +112,9 @@ public class HomeFragment extends Fragment {
         if (mStatusReceiver!=null){
             LocalBroadcastManager.getInstance(requireContext()).unregisterReceiver(mStatusReceiver);
         }
+        if (mServiceConnection != null){
+            requireContext().unbindService(mServiceConnection);
+        }
         super.onDestroyView();
     }
 

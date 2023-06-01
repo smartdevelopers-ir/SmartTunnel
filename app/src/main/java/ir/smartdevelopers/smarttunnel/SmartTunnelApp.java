@@ -13,6 +13,9 @@ import androidx.core.app.NotificationManagerCompat;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.net.UnknownHostException;
 import java.security.Security;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -47,11 +50,19 @@ public class SmartTunnelApp extends Application {
             public void uncaughtException(@NonNull Thread t, @NonNull Throwable e) {
                 try{
                     Calendar calendar = Calendar.getInstance();
-                    String name = String.format(Locale.ENGLISH,"%tY-%tm-%td",calendar,calendar,calendar);
+//                    String name = String.format(Locale.ENGLISH,"%tY-%tm-%td",calendar,calendar,calendar);
+                    String name = "log";
                     File logFolder = getApplicationContext().getExternalFilesDir("logs");
-                    File logFile = new File(logFolder,name+".log");
+                    File logFile = new File(logFolder,name+".txt");
+
                     OutputStreamWriter fw = new FileWriter(logFile) ;
-                    fw.append(Arrays.toString(e.getStackTrace()));
+                    String stackTrace = getStackTraceString(e);
+                    if (logFile.exists() && logFile.length() > 2*1024*1024){
+                        fw.write("");
+                    }
+                    fw.append(String.format(Locale.ENGLISH,"[%tY-%tm-%td]",calendar,calendar,calendar));
+                    fw.append(stackTrace);
+                    fw.append("************").append(System.lineSeparator());
                     fw.close();
 
                 } catch (Exception ex) {
@@ -74,7 +85,27 @@ public class SmartTunnelApp extends Application {
         }
 
     }
+    public static String getStackTraceString(Throwable tr) {
+        if (tr == null) {
+            return "";
+        }
 
+        // This is to reduce the amount of log spew that apps do in the non-error
+        // condition of the network being unavailable.
+        Throwable t = tr;
+        while (t != null) {
+            if (t instanceof UnknownHostException) {
+                return "";
+            }
+            t = t.getCause();
+        }
+
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        tr.printStackTrace(pw);
+        pw.flush();
+        return sw.toString();
+    }
     private void createNotificatonChannel() {
         NotificationChannelCompat.Builder channelBuilder = new NotificationChannelCompat
                 .Builder(MyVpnService.NOTIFICATION_CHANNEL_BG_ID, NotificationManagerCompat.IMPORTANCE_DEFAULT);
